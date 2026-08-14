@@ -230,3 +230,14 @@ export function chordTones(label: string): [string, string, string] {
   const fifth = noteAtInterval(root, 7, 4);
   return [noteNameToString(root), noteNameToString(third), noteNameToString(fifth)];
 }
+
+/**
+ * The three triad-tone frequencies (Hz) — root, third, fifth — of a chord
+ * label such as "C", "Am", or "F#", voiced in `octave`. Composed from
+ * chordTones (for correct spelling) and noteFrequency (for equal-temperament
+ * pitch), so a minor chord differs from its major only in the third, exactly
+ * as the spelling does. The audio layer plays these directly.
+ */
+export function chordFrequencies(label: string, octave = 4): number[] {
+  return chordTones(label).map((note) => noteFrequency(note, octave));
+}

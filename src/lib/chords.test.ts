@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { SONGS } from "../data/songs";
 import {
   ALIGN_KEY,
+  chordFrequencies,
   chordLabelsForKey,
   chordLabelsForTonic,
   chordsForTonic,
@@ -173,5 +174,39 @@ describe("chordTones", () => {
         expect(new Set(letters).size).toBe(3);
       }
     }
+  });
+});
+
+describe("chordFrequencies", () => {
+  it("voices C major at octave 4 as root, third, fifth in Hz", () => {
+    const [root, third, fifth] = chordFrequencies("C", 4);
+    expect(root).toBeCloseTo(261.63, 1); // C4
+    expect(third).toBeCloseTo(329.63, 1); // E4
+    expect(fifth).toBeCloseTo(392.0, 1); // G4
+  });
+
+  it("defaults to octave 4 when none is given", () => {
+    expect(chordFrequencies("C")).toEqual(chordFrequencies("C", 4));
+  });
+
+  it("differs from major only in the third for a minor chord", () => {
+    const major = chordFrequencies("A", 4); // A C# E
+    const minor = chordFrequencies("Am", 4); // A C  E
+    expect(minor[0]).toBeCloseTo(major[0], 6); // same root
+    expect(minor[2]).toBeCloseTo(major[2], 6); // same fifth
+    expect(minor[1]).toBeLessThan(major[1]); // minor third is lower
+  });
+
+  it("composes chordTones with noteFrequency (no lookup table)", () => {
+    for (const label of ["F", "Bb", "G#m", "Eb"]) {
+      const expected = chordTones(label).map((n) => noteFrequency(n, 3));
+      expect(chordFrequencies(label, 3)).toEqual(expected);
+    }
+  });
+
+  it("doubles every tone one octave up", () => {
+    const low = chordFrequencies("G", 3);
+    const high = chordFrequencies("G", 4);
+    low.forEach((hz, i) => expect(high[i]).toBeCloseTo(hz * 2, 6));
   });
 });

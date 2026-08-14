@@ -212,6 +212,13 @@ main > section {
   color: var(--paper);
 }
 
+/* Playing state (set by audio.ts): filled + tinted so "Stop" reads clearly. */
+.playbtn[aria-pressed="true"] {
+  background-color: var(--deg-v);
+  border-color: var(--deg-v);
+  color: var(--paper);
+}
+
 /* --- The counter chip ----------------------------------------------------- */
 
 .counter {
