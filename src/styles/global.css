@@ -16,11 +16,20 @@
   --ink-faint: #8a867b;
   --rule: #ddd7c9;
 
-  /* Scale-degree hues — the through-line of the whole page. */
+  /* Scale-degree hues — the through-line of the whole page. Bright variants
+     accent the chord-cell top borders; the darker *-text variants carry the
+     coloured Roman numerals so they clear WCAG AA (4.5:1) on the paper. */
   --deg-i: #f5a623; /* I  — amber  */
   --deg-v: #ff3d68; /* V  — rose   */
   --deg-vi: #6c5ce7; /* vi — violet */
   --deg-iv: #2dd4bf; /* IV — teal   */
+  --deg-i-text: #8a5300; /* amber, darkened  — 5.6:1 on paper */
+  --deg-v-text: #c01541; /* rose,  darkened  — 5.4:1 on paper */
+  --deg-vi-text: #5b46d6; /* violet, darkened — 5.7:1 on paper */
+  --deg-iv-text: #0d786c; /* teal,  darkened  — 4.8:1 on paper */
+
+  /* Focus indicator — high contrast on the off-white paper. */
+  --focus: #1a56db;
   --font-display: "Iowan Old Style", "Palatino Linotype", palatino, georgia,
     "Times New Roman", serif;
   --font-sans: system-ui, -apple-system, "Segoe UI", roboto, helvetica, arial,
@@ -49,21 +58,27 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Position → hue. Applied to both chord cells and Roman-numeral cells. */
+/* Position → hue. Applied to both chord cells and Roman-numeral cells.
+   --degree-color is the bright accent (borders); --degree-color-text is the
+   AA-contrast tone for coloured type. */
 [data-degree="I"] {
   --degree-color: var(--deg-i);
+  --degree-color-text: var(--deg-i-text);
 }
 
 [data-degree="V"] {
   --degree-color: var(--deg-v);
+  --degree-color-text: var(--deg-v-text);
 }
 
 [data-degree="vi"] {
   --degree-color: var(--deg-vi);
+  --degree-color-text: var(--deg-vi-text);
 }
 
 [data-degree="IV"] {
   --degree-color: var(--deg-iv);
+  --degree-color-text: var(--deg-iv-text);
 }
 
 /* --- Masthead / nav ------------------------------------------------------- */
@@ -105,6 +120,12 @@ body {
   text-underline-offset: 3px;
 }
 
+.sitenav__list a:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
 .sitenav__skip {
   position: absolute;
   left: -9999px;
@@ -114,6 +135,12 @@ body {
 .sitenav__skip:focus {
   position: static;
   left: auto;
+  display: inline-block;
+  padding: 0.4rem 0.75rem;
+  background-color: var(--paper-sunk);
+  border-radius: 0.3rem;
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
 }
 
 /* --- Shared spine layout -------------------------------------------------- */
@@ -246,6 +273,12 @@ main > section {
   position: relative;
 }
 
+/* Bottom clearance so the last song scrolls clear of the docked reveal bar
+   (must exceed the bar's height so nothing is permanently obscured). */
+.lineup {
+  padding-bottom: 4.5rem;
+}
+
 .lineup__lede {
   max-width: 52ch;
   margin: 0 0 2.5rem;
@@ -325,11 +358,39 @@ main > section {
 }
 
 .chord__label {
+  display: inline-block;
   font-family: var(--font-mono);
   font-size: clamp(1.15rem, 2.6vw, 1.7rem);
   font-weight: 500;
   letter-spacing: 0.01em;
   transition: color 0.35s ease;
+}
+
+/* The "snap": align.ts toggles [data-snapping] on the stage each time the
+   labels are (re)written, so the chords blur → scale → settle into place on
+   every Align and every Split. The Roman row is deliberately left untouched. */
+.stage[data-snapping] .chord__label {
+  animation: chord-snap 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes chord-snap {
+  0% {
+    filter: blur(5px);
+    transform: scale(0.82) translateY(0.12em);
+    opacity: 0.35;
+  }
+
+  55% {
+    filter: blur(0);
+    transform: scale(1.08) translateY(0);
+    opacity: 1;
+  }
+
+  100% {
+    filter: blur(0);
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .roman-row {
@@ -343,9 +404,9 @@ main > section {
   text-align: center;
   font-family: var(--font-mono);
   font-size: 0.82rem;
+  font-weight: 600;
   letter-spacing: 0.08em;
-  color: var(--degree-color);
-  opacity: 0.85;
+  color: var(--degree-color-text);
 }
 
 /* When aligned, all five rows read the same — nudge the chords to feel locked. */
@@ -353,13 +414,17 @@ main > section {
   background-color: color-mix(in srgb, var(--degree-color) 10%, var(--paper));
 }
 
-/* --- Scene 3 — the reveal toolbar, docked over the lineup ----------------- */
+/* --- Scene 3 — the reveal toolbar, docked at the foot of the viewport ------
+   A slim control bar the lineup scrolls above. The lineup carries bottom
+   padding (below) so the last song always clears the bar at rest, and the bar
+   never permanently hides any of the five songs. */
 
 .reveal {
   position: sticky;
-  bottom: 0.75rem;
+  bottom: 0;
   z-index: 5;
-  margin-top: 1.5rem;
+  margin-top: 2rem;
+  padding-bottom: 0.75rem;
   pointer-events: none;
 }
 
@@ -369,12 +434,12 @@ main > section {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem 1.5rem;
-  padding: 0.9rem 1.25rem;
+  gap: 0.6rem 1.5rem;
+  padding: 0.75rem 1.25rem;
   background-color: var(--ink);
   color: var(--paper);
   border-radius: 0.75rem;
-  box-shadow: 0 12px 30px #1b1b1b33;
+  box-shadow: 0 12px 30px #1b1b1b55;
 }
 
 .reveal__label {
@@ -422,6 +487,11 @@ main > section {
   border: 1px solid #fff3;
   background-color: var(--paper);
   color: var(--ink);
+}
+
+.keypicker__select:focus-visible {
+  outline: 3px solid var(--deg-i);
+  outline-offset: 2px;
 }
 
 .btn {
@@ -479,6 +549,66 @@ main > section {
   max-width: 22ch;
 }
 
+/* --- Responsive: phone / narrow (desktop 1920 keeps the editorial grid) ---
+   The three-column song row can't fit 390px, so it stacks: meta on top, the
+   four chord columns as a full-width 4-across row sized to fit, the Roman row
+   beneath, then the Play button. */
+
+@media (width <= 48rem) {
+  .sitenav {
+    flex-wrap: wrap;
+    gap: 0.75rem 1.25rem;
+  }
+
+  .song {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 1.1rem;
+    padding: 1.6rem 0;
+  }
+
+  .chords {
+    gap: 0.35rem;
+  }
+
+  .chord {
+    padding: 0.5rem 0.2rem 0.15rem;
+  }
+
+  .chord__label {
+    font-size: clamp(1rem, 4.6vw, 1.5rem);
+  }
+
+  .roman-row {
+    gap: 0.35rem;
+  }
+
+  .playbtn--song {
+    justify-self: start;
+  }
+
+  .lineup {
+    padding-bottom: 11rem;
+  }
+
+  .reveal {
+    margin-top: 1.5rem;
+  }
+
+  .reveal__inner {
+    gap: 0.55rem 1rem;
+    padding: 0.7rem 0.85rem;
+  }
+
+  .reveal__controls {
+    gap: 0.5rem;
+  }
+
+  .keypicker__select {
+    font-size: 0.9rem;
+  }
+}
+
 /* --- Motion preference ---------------------------------------------------- */
 
 @media (prefers-reduced-motion: reduce) {
@@ -490,5 +620,10 @@ main > section {
   *::before,
   *::after {
     transition-duration: 0.01ms !important;
+  }
+
+  /* Honestly no motion: the snap becomes an instant swap. */
+  .stage[data-snapping] .chord__label {
+    animation: none;
   }
 }

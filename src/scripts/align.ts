@@ -21,6 +21,9 @@ const status = document.querySelector<HTMLElement>("[data-align-status]");
 // onto one shared key, which is what makes them collapse into the same chords.
 let aligned = false;
 let sharedKey = ALIGN_KEY;
+// Skip the "snap" on the very first (server-state) paint; only animate real
+// aligns and splits the visitor triggers.
+let hasRendered = false;
 
 function songElement(title: string): HTMLElement | null {
   return document.querySelector<HTMLElement>(
@@ -48,12 +51,22 @@ function render(): void {
     if (keyLabel) keyLabel.textContent = key;
   }
 
-  if (stage) stage.dataset.aligned = String(aligned);
+  if (stage) {
+    stage.dataset.aligned = String(aligned);
+    // Retrigger the CSS "snap" animation: drop the attribute, force a reflow,
+    // then re-add it so the keyframes restart on every align and every split.
+    if (hasRendered) {
+      stage.removeAttribute("data-snapping");
+      stage.getBoundingClientRect();
+      stage.setAttribute("data-snapping", "");
+    }
+  }
   if (status) {
     status.textContent = aligned
       ? `${sharedKey} major — identical`
       : "their own keys";
   }
+  hasRendered = true;
 }
 
 function alignTo(key: string): void {
