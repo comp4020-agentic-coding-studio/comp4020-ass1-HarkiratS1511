@@ -1,20 +1,184 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import { SONGS } from "../data/songs";
+import { ALIGN_KEY, chordsForTonic } from "../lib/chords";
+
+// The keys the visitor can transpose every song to. Conventional lead-sheet
+// spellings (mixed sharps/flats) so the shared-key readout matches how a
+// musician would write it — the same order chords.ts uses internally.
+const KEYS = [
+  "C",
+  "Db",
+  "D",
+  "Eb",
+  "E",
+  "F",
+  "F#",
+  "G",
+  "Ab",
+  "A",
+  "Bb",
+  "B",
+] as const;
+
+// Degree order is the thesis: every song, every key, always I → V → vi → IV.
+const ROMANS = ["I", "V", "vi", "IV"] as const;
 ---
 
-<Layout title="COMP4020 prototype">
-  <header>
-    <nav aria-label="Primary">
-      <a href="./">Home</a>
+<Layout title="Every pop song is the same four chords">
+  <header class="masthead">
+    <nav class="sitenav" aria-label="Sections">
+      <a class="sitenav__skip" href="#lineup">Skip to the songs</a>
+      <ul class="sitenav__list">
+        <li><a href="#hook">The claim</a></li>
+        <li><a href="#lineup">The lineup</a></li>
+        <li><a href="#reveal">Align</a></li>
+        <li><a href="#verdict">The verdict</a></li>
+      </ul>
     </nav>
   </header>
+
   <main>
-    <h1>COMP4020 prototype</h1>
-    <p data-testid="intro">
-      Replace this with your prototype. This week's brief is on the course
-      website; <code>spec/README.md</code> explains how the checks in this repo
-      relate to it.
-    </p>
+    <!-- Scene 1 — the hook -->
+    <section class="hook" id="hook">
+      <p class="kicker">One progression · Five songs</p>
+      <h1 class="hook__headline">Every pop song is the same four chords.</h1>
+      <p class="hook__support">Here&rsquo;s the proof &mdash; you can hear it.</p>
+      <div class="hook__actions">
+        <button
+          class="playbtn playbtn--hero"
+          type="button"
+          data-play="hero"
+          aria-label="Play the four-chord progression"
+        >
+          <span class="playbtn__glyph" aria-hidden="true">&#9654;</span>
+          <span>Play the four chords</span>
+        </button>
+        <p class="counter" aria-label="Five songs, four chords, one move">
+          <span>5 songs</span><span aria-hidden="true">·</span><span
+            >4 chords</span
+          ><span aria-hidden="true">·</span><span>1 move</span>
+        </p>
+      </div>
+    </section>
+
+    <!-- Scene 2 + 3 — the lineup, with the align toolbar docked over it -->
+    <section class="stage" data-stage data-aligned="false">
+      <div class="lineup" id="lineup">
+        <p class="lineup__lede">
+          Same shape, different keys. Right now each song sits in the key it was
+          released in, so the letters look nothing alike. Watch the Roman
+          numerals underneath &mdash; those never move.
+        </p>
+
+        <ol class="songlist">
+          {
+            SONGS.map((song) => {
+              const chords = chordsForTonic(song.tonic);
+              return (
+                <li
+                  class="song"
+                  data-song={song.title}
+                  data-tonic={song.tonic}
+                  data-current-key={song.tonic}
+                >
+                  <div class="song__meta">
+                    <h2 class="song__title">{song.title}</h2>
+                    <p class="song__artist">{song.artist}</p>
+                    <p class="song__section">{song.section}</p>
+                    <p class="song__key">
+                      key of <span data-current-key-label>{song.tonic}</span>
+                    </p>
+                  </div>
+
+                  <div class="song__progression">
+                    <div
+                      class="chords"
+                      data-testid="chords"
+                      aria-label={`Chords for ${song.title} in the current key`}
+                    >
+                      {chords.map((chord) => (
+                        <div class="chord" data-degree={chord.degree}>
+                          <span class="chord__label" data-chord-label>
+                            {chord.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div
+                      class="roman-row"
+                      data-testid="roman-row"
+                      aria-label="Roman numerals — constant in every key"
+                    >
+                      {ROMANS.map((roman) => (
+                        <span class="roman" data-degree={roman}>
+                          {roman}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button
+                    class="playbtn playbtn--song"
+                    type="button"
+                    data-play={song.title}
+                    aria-label={`Play ${song.title}`}
+                  >
+                    <span class="playbtn__glyph" aria-hidden="true">
+                      &#9654;
+                    </span>
+                    <span>Play</span>
+                  </button>
+                </li>
+              );
+            })
+          }
+        </ol>
+      </div>
+
+      <!-- Scene 3 — the reveal: the control that snaps every song to one key -->
+      <div class="reveal" id="reveal" data-testid="align-control">
+        <div class="reveal__inner">
+          <div class="reveal__copy">
+            <p class="reveal__label">Transpose all five to</p>
+            <p class="reveal__hint" data-align-status>their own keys</p>
+          </div>
+          <div class="reveal__controls">
+            <label class="keypicker">
+              <span class="keypicker__label">Shared key</span>
+              <select class="keypicker__select" data-key-select>
+                <option value="__none__">Each song&rsquo;s own key</option>
+                {
+                  KEYS.map((key) => (
+                    <option value={key}>{key} major</option>
+                  ))
+                }
+              </select>
+            </label>
+            <button class="btn btn--primary" type="button" data-align>
+              Align to {ALIGN_KEY}
+            </button>
+            <button class="btn btn--ghost" type="button" data-reset>
+              Split apart
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Scene 4 — the verdict + counter -->
+    <section class="verdict" id="verdict">
+      <p class="verdict__pov">
+        The letters change. The move doesn&rsquo;t. Now you&rsquo;ll hear it
+        everywhere.
+      </p>
+      <p class="counter counter--verdict">
+        <span>5 songs</span><span aria-hidden="true">·</span><span>4 chords</span
+        ><span aria-hidden="true">·</span><span>1 move</span>
+      </p>
+    </section>
   </main>
-  <script src="../scripts/main.ts"></script>
+
+  <script src="../scripts/align.ts"></script>
 </Layout>

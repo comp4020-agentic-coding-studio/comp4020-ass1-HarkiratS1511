@@ -1,16 +1,487 @@
+/* ---------------------------------------------------------------------------
+   "One progression, five keys" — editorial ledger, warmed up.
+
+   Off-white paper, near-black ink. A strong serif for headlines, a clean sans
+   for prose, and monospace for everything that is really data: chord symbols
+   and Roman numerals. Each of the four scale-degree positions owns one hue,
+   used consistently across every song, so colour quietly says "same position"
+   before the reveal even happens.
+--------------------------------------------------------------------------- */
+
+:root {
+  --paper: #f4f1ea;
+  --paper-sunk: #efebe1;
+  --ink: #1b1b1b;
+  --ink-soft: #55524a;
+  --ink-faint: #8a867b;
+  --rule: #ddd7c9;
+
+  /* Scale-degree hues — the through-line of the whole page. */
+  --deg-i: #f5a623; /* I  — amber  */
+  --deg-v: #ff3d68; /* V  — rose   */
+  --deg-vi: #6c5ce7; /* vi — violet */
+  --deg-iv: #2dd4bf; /* IV — teal   */
+  --font-display: "Iowan Old Style", "Palatino Linotype", palatino, georgia,
+    "Times New Roman", serif;
+  --font-sans: system-ui, -apple-system, "Segoe UI", roboto, helvetica, arial,
+    sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code",
+    "Roboto Mono", menlo, consolas, monospace;
+  --spine: min(66rem, 92vw);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
-  padding: 2rem;
-  font-family: system-ui, sans-serif;
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
   line-height: 1.6;
-  color: #1a1a1a;
+  -webkit-font-smoothing: antialiased;
 }
 
-main {
-  max-width: 40rem;
-  margin: 0 auto;
+/* Position → hue. Applied to both chord cells and Roman-numeral cells. */
+[data-degree="I"] {
+  --degree-color: var(--deg-i);
 }
 
-a {
-  color: #0b5fff;
+[data-degree="V"] {
+  --degree-color: var(--deg-v);
+}
+
+[data-degree="vi"] {
+  --degree-color: var(--deg-vi);
+}
+
+[data-degree="IV"] {
+  --degree-color: var(--deg-iv);
+}
+
+/* --- Masthead / nav ------------------------------------------------------- */
+
+.masthead {
+  border-bottom: 1px solid var(--rule);
+}
+
+.sitenav {
+  width: var(--spine);
+  margin-inline: auto;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding-block: 0.9rem;
+  font-size: 0.82rem;
+}
+
+.sitenav__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sitenav__list a {
+  color: var(--ink-soft);
+  text-decoration: none;
+  font-variant: small-caps;
+  letter-spacing: 0.04em;
+}
+
+.sitenav__list a:hover,
+.sitenav__list a:focus-visible {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.sitenav__skip {
+  position: absolute;
+  left: -9999px;
+  color: var(--ink);
+}
+
+.sitenav__skip:focus {
+  position: static;
+  left: auto;
+}
+
+/* --- Shared spine layout -------------------------------------------------- */
+
+main > section {
+  width: var(--spine);
+  margin-inline: auto;
+}
+
+.kicker {
+  margin: 0 0 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* --- Scene 1 — the hook --------------------------------------------------- */
+
+.hook {
+  padding-block: clamp(3.5rem, 9vw, 7rem) clamp(2.5rem, 6vw, 4rem);
+}
+
+.hook__headline {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2.6rem, 8vw, 5.25rem);
+  line-height: 1.02;
+  letter-spacing: -0.015em;
+  max-width: 16ch;
+}
+
+.hook__support {
+  margin: 1.25rem 0 0;
+  font-size: clamp(1.1rem, 2.6vw, 1.5rem);
+  color: var(--ink-soft);
+  max-width: 40ch;
+}
+
+.hook__actions {
+  margin-top: 2.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+/* --- Play buttons (inert this phase — hooks for Phase 3 audio) ------------- */
+
+.playbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  background-color: var(--ink);
+  color: var(--paper);
+  transition:
+    transform 0.15s ease,
+    background-color 0.2s ease;
+}
+
+.playbtn:hover {
+  transform: translateY(-1px);
+}
+
+.playbtn:focus-visible {
+  outline: 3px solid var(--deg-v);
+  outline-offset: 2px;
+}
+
+.playbtn__glyph {
+  font-size: 0.72em;
+  line-height: 1;
+}
+
+.playbtn--hero {
+  padding: 0.85rem 1.5rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.playbtn--song {
+  padding: 0.45rem 1rem;
+  font-size: 0.85rem;
+  background-color: transparent;
+  color: var(--ink);
+}
+
+.playbtn--song:hover {
+  background-color: var(--ink);
+  color: var(--paper);
+}
+
+/* --- The counter chip ----------------------------------------------------- */
+
+.counter {
+  margin: 0;
+  display: inline-flex;
+  gap: 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+}
+
+.counter span[aria-hidden="true"] {
+  color: var(--ink-faint);
+}
+
+.counter--verdict {
+  margin-top: 1.5rem;
+  font-size: 1rem;
+}
+
+/* --- Scene 2 — the lineup ------------------------------------------------- */
+
+.stage {
+  position: relative;
+}
+
+.lineup__lede {
+  max-width: 52ch;
+  margin: 0 0 2.5rem;
+  font-size: 1.05rem;
+  color: var(--ink-soft);
+}
+
+.songlist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 1px;
+  background-color: var(--rule);
+  border-block: 1px solid var(--rule);
+}
+
+.song {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1fr) minmax(18rem, 2fr) auto;
+  align-items: center;
+  gap: clamp(1rem, 4vw, 3rem);
+  padding: clamp(1.4rem, 3vw, 2.1rem) 0;
+  background-color: var(--paper);
+}
+
+.song__meta {
+  min-width: 0;
+}
+
+.song__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.25rem, 2.4vw, 1.7rem);
+  line-height: 1.1;
+}
+
+.song__artist {
+  margin: 0.2rem 0 0;
+  color: var(--ink-soft);
+}
+
+.song__section {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+  font-variant: small-caps;
+  letter-spacing: 0.05em;
+}
+
+.song__key {
+  margin: 0.5rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+}
+
+.song__key span {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* --- The progression: four colour-coded chord cells + the Roman row ------- */
+
+.chords {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.chord {
+  border-top: 4px solid var(--degree-color);
+  padding: 0.55rem 0.4rem 0.15rem;
+  text-align: center;
+  background-color: var(--paper-sunk);
+}
+
+.chord__label {
+  font-family: var(--font-mono);
+  font-size: clamp(1.15rem, 2.6vw, 1.7rem);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  transition: color 0.35s ease;
+}
+
+.roman-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.roman {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  color: var(--degree-color);
+  opacity: 0.85;
+}
+
+/* When aligned, all five rows read the same — nudge the chords to feel locked. */
+.stage[data-aligned="true"] .chord {
+  background-color: color-mix(in srgb, var(--degree-color) 10%, var(--paper));
+}
+
+/* --- Scene 3 — the reveal toolbar, docked over the lineup ----------------- */
+
+.reveal {
+  position: sticky;
+  bottom: 0.75rem;
+  z-index: 5;
+  margin-top: 1.5rem;
+  pointer-events: none;
+}
+
+.reveal__inner {
+  pointer-events: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 1.5rem;
+  padding: 0.9rem 1.25rem;
+  background-color: var(--ink);
+  color: var(--paper);
+  border-radius: 0.75rem;
+  box-shadow: 0 12px 30px #1b1b1b33;
+}
+
+.reveal__label {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--paper);
+  opacity: 0.75;
+}
+
+.reveal__hint {
+  margin: 0.2rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.reveal__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.keypicker {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.keypicker__label {
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.keypicker__select {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 0.4rem;
+  border: 1px solid #fff3;
+  background-color: var(--paper);
+  color: var(--ink);
+}
+
+.btn {
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.55rem 1.1rem;
+  border-radius: 0.4rem;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition:
+    transform 0.15s ease,
+    background-color 0.2s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn:focus-visible {
+  outline: 3px solid var(--deg-i);
+  outline-offset: 2px;
+}
+
+.btn--primary {
+  background-color: var(--deg-i);
+  color: var(--ink);
+}
+
+.btn--ghost {
+  background-color: transparent;
+  color: var(--paper);
+  border-color: #ffffff40;
+}
+
+.btn--ghost:hover {
+  background-color: #ffffff1a;
+}
+
+/* --- Scene 4 — the verdict ------------------------------------------------ */
+
+.verdict {
+  padding-block: clamp(3.5rem, 8vw, 6rem);
+  border-top: 1px solid var(--rule);
+  margin-top: clamp(2.5rem, 6vw, 4rem);
+}
+
+.verdict__pov {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.7rem, 4.5vw, 3rem);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  max-width: 22ch;
+}
+
+/* --- Motion preference ---------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
 }
