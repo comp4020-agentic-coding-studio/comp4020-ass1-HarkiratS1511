@@ -14,13 +14,34 @@ import { ALIGN_KEY, chordFrequencies, chordLabelsForTonic } from "../lib/chords"
 
 // --- Musical constants -----------------------------------------------------
 
-const CHORD_SECONDS = 0.68; // how long each chord sounds before the next
-const ATTACK = 0.022; // fade-in, seconds — slightly rounded so onsets aren't abrupt
-const DECAY = 0.12; // fall from peak to the sustain level
-const RELEASE = 0.18; // fade-out tail after the chord's slot ends — softened, still articulate
-const PEAK_GAIN = 0.16; // per-note level; ×3 stacked stays under the master
-const SUSTAIN_GAIN = 0.11; // held level between decay and release
-const MASTER_GAIN = 0.9; // shared output trim, low enough to avoid clipping
+const CHORD_SECONDS = 0.7; // one chord per beat (~86 bpm) before the next slot
+
+// Each chord slot is played as a little DOWN/UP pop strum rather than one held
+// block: a firm downbeat, then a softer off-beat lift. Both strikes re-voice the
+// SAME triad from the SAME frequencies, so the slot still sounds one chord — it
+// just breathes with a rhythm instead of droning like an organ. `at` is the
+// fraction of the slot the strike lands on; `velocity` scales its loudness;
+// `up` reverses the strum direction (an upstroke sweeps high string → low).
+// This pattern is identical for every song, so two aligned songs still produce
+// an identical set of frequencies at identical times — the thesis holds.
+const STRUM_PATTERN = [
+  { at: 0, velocity: 1, up: false },
+  { at: 0.5, velocity: 0.62, up: true },
+] as const;
+const STRUM_SPREAD = 0.014; // s between adjacent strings within one strum
+const RING_SECONDS = 0.62; // how long a struck note rings before its release tail
+
+// Per-note pluck envelope: fast attack, quick fall to a low sustain that rings
+// out — plucked, not switched on, so each re-strike reads as rhythm.
+const ATTACK = 0.008; // fade-in, seconds — a pluck, not a swell
+const DECAY = 0.11; // fall from the attack peak to the ringing sustain
+const RELEASE = 0.16; // fade-out tail after a struck note stops ringing
+const CHORD_PEAK = 0.13; // a chord tone's attack level; ×3 stacked + bass stays under master
+const CHORD_SUSTAIN = 0.055; // the level a chord tone rings at between strikes
+const BASS_PEAK = 0.15; // the root dropped an octave — carries the low end
+const BASS_SUSTAIN = 0.07; // the bass note's ringing level
+const BASS_OCTAVE = 0.5; // ×0.5 = one octave down, for weight under the triad
+const MASTER_GAIN = 0.82; // shared output trim, lowered now that a bass note stacks
 const STOP_RAMP = 0.06; // gain ramp when stopping, seconds — kills clicks
 
 // --- Warmth chain: a lowpass to round the tone + a small synthetic room -----
@@ -139,36 +160,84 @@ interface Session {
 
 let session: Session | null = null;
 
-/** Schedule one chord (a soft triad) to start at `startTime` on the clock. */
-function scheduleChord(active: Session, label: string, startTime: number): void {
+/** Schedule one plucked note (a chord tone or the bass) into the warmth chain. */
+function scheduleNote(
+  active: Session,
+  hz: number,
+  startTime: number,
+  ringEnd: number,
+  peak: number,
+  sustain: number,
+  type: OscillatorType,
+): void {
   const context = getAudioContext();
-  const end = startTime + CHORD_SECONDS;
+  const osc = context.createOscillator();
+  osc.type = type;
+  osc.frequency.value = hz;
 
-  for (const hz of chordFrequencies(label)) {
-    const osc = context.createOscillator();
-    osc.type = "triangle"; // softer than sine's plainness, no square harshness
-    osc.frequency.value = hz;
+  // A short A/D/S/R envelope so the note is plucked, not switched on: quick
+  // attack to `peak`, fall to a ringing `sustain`, then a soft release tail.
+  const gain = context.createGain();
+  const level = gain.gain;
+  const sustainAt = Math.max(startTime + ATTACK + DECAY, ringEnd - RELEASE);
+  level.setValueAtTime(0, startTime);
+  level.linearRampToValueAtTime(peak, startTime + ATTACK);
+  level.linearRampToValueAtTime(sustain, startTime + ATTACK + DECAY);
+  level.setValueAtTime(sustain, sustainAt);
+  level.linearRampToValueAtTime(0, ringEnd);
 
-    // A short A/D/S/R envelope per note so chords sound plucked, not switched.
-    const gain = context.createGain();
-    const level = gain.gain;
-    level.setValueAtTime(0, startTime);
-    level.linearRampToValueAtTime(PEAK_GAIN, startTime + ATTACK);
-    level.linearRampToValueAtTime(SUSTAIN_GAIN, startTime + ATTACK + DECAY);
-    level.setValueAtTime(SUSTAIN_GAIN, end - RELEASE);
-    level.linearRampToValueAtTime(0, end);
+  // Into the warmth chain (filter → dry/wet → master), not straight to master.
+  osc.connect(gain).connect(active.filter);
+  osc.start(startTime);
+  osc.stop(ringEnd + 0.02);
 
-    // Into the warmth chain (filter → dry/wet → master), not straight to master.
-    osc.connect(gain).connect(active.filter);
-    osc.start(startTime);
-    osc.stop(end + RELEASE);
+  active.voices.add(osc);
+  osc.onended = (): void => {
+    osc.disconnect();
+    gain.disconnect();
+    active.voices.delete(osc);
+  };
+}
 
-    active.voices.add(osc);
-    osc.onended = (): void => {
-      osc.disconnect();
-      gain.disconnect();
-      active.voices.delete(osc);
-    };
+/** Schedule one chord slot: a down/up strum of the triad over its bass root. */
+function scheduleChord(active: Session, label: string, startTime: number): void {
+  // Sort ascending so a downstrum sweeps low string → high. The sort is a pure
+  // function of the label's own frequencies, so every song voices the chord the
+  // same way — two aligned songs stay bit-for-bit identical (thesis-in-sound).
+  const triad = [...chordFrequencies(label)].sort((a, b) => a - b);
+  const rootHz = triad[0] * BASS_OCTAVE; // bass = chord root, one octave down
+
+  for (const strike of STRUM_PATTERN) {
+    const strikeStart = startTime + strike.at * CHORD_SECONDS;
+    const ringEnd = strikeStart + RING_SECONDS;
+
+    // The triad, strummed: stagger each string's onset so they don't all hit at
+    // once (upstrokes sweep the other way). Still one chord — just articulated.
+    const order = strike.up ? [...triad].reverse() : triad;
+    for (const [i, hz] of order.entries()) {
+      scheduleNote(
+        active,
+        hz,
+        strikeStart + i * STRUM_SPREAD,
+        ringEnd,
+        CHORD_PEAK * strike.velocity,
+        CHORD_SUSTAIN * strike.velocity,
+        "triangle", // softer than sine's plainness, no square harshness
+      );
+    }
+
+    // The bass root anchors each strike with clean low end (a sine has no fizz
+    // to tame). Its pitch is the chord root octave-down, so it too is identical
+    // across aligned songs and never disagrees with the chord you see.
+    scheduleNote(
+      active,
+      rootHz,
+      strikeStart,
+      ringEnd,
+      BASS_PEAK * strike.velocity,
+      BASS_SUSTAIN * strike.velocity,
+      "sine",
+    );
   }
 }
 
