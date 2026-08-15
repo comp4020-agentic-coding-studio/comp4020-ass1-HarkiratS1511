@@ -7,6 +7,7 @@ import {
   chordLabelsForTonic,
   chordsForTonic,
   chordTones,
+  distinctChordNames,
   noteFrequency,
   transpose,
 } from "./chords";
@@ -97,6 +98,35 @@ describe("the align invariant: this is the core thesis", () => {
         "IV",
       ]);
     }
+  });
+});
+
+describe("distinctChordNames: the counter that makes the collapse legible", () => {
+  it("the five real tonics B F A D Eb give 16 distinct chord names", () => {
+    // This is the headline number: same four scale degrees, five keys, sixteen
+    // different chord LETTERS. It backs the counter's split state (16 → …).
+    const names = distinctChordNames(["B", "F", "A", "D", "Eb"]);
+    expect(new Set(names).size).toBe(16);
+    expect(names.length).toBe(16);
+  });
+
+  it("the five songs' own tonics give 16 distinct chord names", () => {
+    // Derived from the data, not the hard-coded list above — if a song's key
+    // ever changed, this is what the counter would actually show.
+    const names = distinctChordNames(SONGS.map((song) => song.tonic));
+    expect(new Set(names).size).toBe(16);
+  });
+
+  it("five copies of one shared key collapse to the same 4 chords", () => {
+    // The align payoff: 16 → 4. Every song on the same key shows the same four.
+    const names = distinctChordNames(SONGS.map(() => ALIGN_KEY));
+    expect(names.length).toBe(4);
+    expect(names).toEqual(chordLabelsForTonic(ALIGN_KEY));
+  });
+
+  it("dedupes in first-seen order and never invents a name", () => {
+    const names = distinctChordNames(["C", "C"]);
+    expect(names).toEqual(["C", "G", "Am", "F"]);
   });
 });
 

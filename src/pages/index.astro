@@ -1,7 +1,12 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import { SONGS } from "../data/songs";
-import { ALIGN_KEY, chordsForTonic, type Degree } from "../lib/chords";
+import {
+  ALIGN_KEY,
+  chordsForTonic,
+  distinctChordNames,
+  type Degree,
+} from "../lib/chords";
 
 // Real cover art (one per exhibit A–E) + the front-page press photo. Imported
 // as ESM assets so Vite hashes them under the deploy base path — a hard-coded
@@ -35,6 +40,14 @@ const KEYS = [
 
 // Degree order is the thesis: every song, every key, always I → V → vi → IV.
 const ROMANS = ["I", "V", "vi", "IV"] as const;
+
+// The split-state headline: how many DIFFERENT chord names the five songs print
+// when each is in its own key. Derived from the exact same source as the cells
+// (chordLabelsForTonic, via distinctChordNames), so the server-rendered no-JS
+// number can never disagree with what align.ts recomputes on first render.
+const SPLIT_DISTINCT_COUNT = distinctChordNames(
+  SONGS.map((song) => song.tonic),
+).length;
 
 // What each chord *does* — its role is degree-based, so it's identical in every
 // key and every song. Keyed on degree, this copy is rendered once per chord and
@@ -544,6 +557,21 @@ const FORGE_CHIPS = chordsForTonic(FORGE_KEY);
       <div class="reveal" id="reveal" data-testid="align-control">
         <div class="reveal__inner">
           <div class="reveal__copy">
+            {/* The live tally: the whole thesis in one number. Split, the five
+                songs print SPLIT_DISTINCT_COUNT (16) different chord names;
+                aligned, that collapses to 4 — "the same four, in every song".
+                Server-rendered here as the split state (the no-JS fallback);
+                align.ts overwrites both number and caption from the exact same
+                source that fills the cells (distinctChordNames) on first
+                render, so the count provably equals what is on the page. */}
+            <p class="reveal__tally" data-tally>
+              <span class="reveal__tally-num" data-distinct-count
+                >{SPLIT_DISTINCT_COUNT}</span
+              >
+              <span class="reveal__tally-cap" data-distinct-caption
+                >different chord names across the five songs</span
+              >
+            </p>
             <p class="reveal__label">Press room &middot; Transpose all five to</p>
             <p class="reveal__hint" data-align-status aria-live="polite">
               their own keys

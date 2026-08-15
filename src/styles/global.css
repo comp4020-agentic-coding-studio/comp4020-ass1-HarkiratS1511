@@ -1265,6 +1265,58 @@ body {
   color: var(--ink-faint);
 }
 
+/* The live tally: the thesis as one number. Read first (top of the copy), the
+   big accented figure carries the "16 → 4" collapse; the caption names what the
+   number counts. baseline-aligned so the big figure and its caption sit on one
+   line, wrapping cleanly at 390px without pushing the layout wide. */
+.reveal__tally {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.55rem;
+  margin: 0 0 0.35rem;
+  max-width: 34ch;
+}
+
+.reveal__tally-num {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(2.1rem, 7vw, 3rem);
+  line-height: 0.9;
+  color: var(--stamp-magenta);
+  font-variant-numeric: tabular-nums;
+}
+
+.reveal__tally-cap {
+  min-width: 0;
+  font-size: 0.8rem;
+  line-height: 1.2;
+  color: var(--ink-faint);
+}
+
+/* Emphasis on a count change: a brief scale + color flash, class-toggled by
+   align.ts for ~500ms. Guarded off under reduced motion below. */
+@keyframes reveal-tally-pulse {
+  0% {
+    transform: scale(1);
+  }
+
+  35% {
+    transform: scale(1.22);
+    color: var(--plate-v);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+.reveal__tally-num--pulse {
+  display: inline-block;
+  transform-origin: left center;
+  animation: reveal-tally-pulse 0.5s ease;
+}
+
 /* The payoff line: absent from layout until aligned, then eased in. Padding
    (not margin) carries the top gap so the collapse via max-height leaves no
    residual space above it while hidden — margin on a max-height: 0 element
@@ -1762,6 +1814,11 @@ body {
   }
 
   .forge__chip--dragging {
+    transform: none;
+  }
+
+  .reveal__tally-num--pulse {
+    animation: none;
     transform: none;
   }
 }

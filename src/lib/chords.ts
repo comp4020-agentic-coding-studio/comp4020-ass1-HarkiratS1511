@@ -164,6 +164,28 @@ export function chordLabelsForTonic(tonic: string): string[] {
 }
 
 /**
+ * The DISTINCT chord names produced across a list of keys — every key's four
+ * I–V–vi–IV labels (from chordLabelsForTonic, the same function that fills the
+ * cells) flattened and deduped, in first-seen order. This is the single source
+ * for the "N different chord names" counter, so the number can never drift from
+ * what is actually rendered: the five real tonics ["B","F","A","D","Eb"] give
+ * 16 distinct names; five copies of one shared key collapse to the same 4.
+ */
+export function distinctChordNames(keys: string[]): string[] {
+  const seen = new Set<string>();
+  const names: string[] = [];
+  for (const key of keys) {
+    for (const label of chordLabelsForTonic(key)) {
+      if (!seen.has(label)) {
+        seen.add(label);
+        names.push(label);
+      }
+    }
+  }
+  return names;
+}
+
+/**
  * The label set a song should display for a given "current key" — either
  * the song's own tonic (unaligned) or the shared ALIGN_KEY (aligned). The
  * progression's chords always come from this function, never from a

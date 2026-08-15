@@ -7,7 +7,12 @@
 // Audio is Phase 3. The [data-play] buttons are left inert on purpose.
 
 import { SONGS } from "../data/songs";
-import { ALIGN_KEY, chordLabelsForTonic, type Degree } from "../lib/chords";
+import {
+  ALIGN_KEY,
+  chordLabelsForTonic,
+  distinctChordNames,
+  type Degree,
+} from "../lib/chords";
 
 const DEGREES: Degree[] = ["I", "V", "vi", "IV"];
 
@@ -16,6 +21,13 @@ const keySelect = document.querySelector<HTMLSelectElement>("[data-key-select]")
 const alignButton = document.querySelector<HTMLButtonElement>("[data-align]");
 const resetButton = document.querySelector<HTMLButtonElement>("[data-reset]");
 const status = document.querySelector<HTMLElement>("[data-align-status]");
+const countEl = document.querySelector<HTMLElement>("[data-distinct-count]");
+const captionEl = document.querySelector<HTMLElement>("[data-distinct-caption]");
+
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+// Remember the last count we painted so we only pulse on a real change.
+let lastCount: number | null = null;
+let pulseTimer: ReturnType<typeof setTimeout> | undefined;
 
 // Unaligned = each song in its own released key. Aligned = every song forced
 // onto one shared key, which is what makes them collapse into the same chords.
@@ -31,16 +43,51 @@ function songElement(title: string): HTMLElement | null {
   );
 }
 
+// The live "distinct chord count". Given the keys that just filled the cells,
+// count the distinct chord names from the SAME source (distinctChordNames over
+// chordLabelsForTonic) and write it into the tally, so the number provably
+// equals what is on the page. Caption swaps to name the collapse when aligned;
+// on a real change the number gets a short emphasis pulse (skipped under
+// prefers-reduced-motion, where the text just swaps).
+function updateTally(keys: string[]): void {
+  const count = distinctChordNames(keys).length;
+  if (countEl) countEl.textContent = String(count);
+  if (captionEl) {
+    captionEl.textContent =
+      count === 4
+        ? "chord names — the same four, in every song"
+        : "different chord names across the five songs";
+  }
+
+  const changed = lastCount !== null && lastCount !== count;
+  if (changed && countEl && !reducedMotion.matches) {
+    countEl.classList.remove("reveal__tally-num--pulse");
+    // Force a reflow so removing then re-adding the class restarts the keyframe.
+    void countEl.offsetWidth;
+    countEl.classList.add("reveal__tally-num--pulse");
+    clearTimeout(pulseTimer);
+    pulseTimer = setTimeout(() => {
+      countEl.classList.remove("reveal__tally-num--pulse");
+    }, 500);
+  }
+  lastCount = count;
+}
+
 // `animate` gates ONLY the CSS "snap" retrigger, defaulting to true so every
 // align and every split gets the snap. No caller currently passes false; the
 // gate is kept because render() is the single place that would need to
 // suppress it if a future control (e.g. a continuous transpose) needed to.
 function render(animate = true): void {
+  // The keys actually driving the cells this paint, collected in the loop so
+  // the tally below counts the EXACT same source that fills the chords — no
+  // second lookup that could drift from the DOM.
+  const currentKeys: string[] = [];
   for (const song of SONGS) {
     const el = songElement(song.title);
     if (!el) continue;
 
     const key = aligned ? sharedKey : song.tonic;
+    currentKeys.push(key);
     const labels = chordLabelsForTonic(key);
 
     DEGREES.forEach((degree, index) => {
@@ -54,6 +101,8 @@ function render(animate = true): void {
     const keyLabel = el.querySelector<HTMLElement>("[data-current-key-label]");
     if (keyLabel) keyLabel.textContent = key;
   }
+
+  updateTally(currentKeys);
 
   if (stage) {
     stage.dataset.aligned = String(aligned);
