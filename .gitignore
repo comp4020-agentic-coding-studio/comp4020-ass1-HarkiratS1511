@@ -7,6 +7,15 @@ dist/
 ._*
 Thumbs.db
 Desktop.ini
+*:Zone.Identifier
+
+# design-handoff scratch: mockups and reference shots used while directing the
+# redesign — never part of the shipped site, kept local so nothing sweeps them in
+CURRENT-DESIGN.md
+NEW-DESIGN.md
+/design-shots/
+/new design ss/
+/Website redesign project.zip
 
 # keep secrets out of the repo: your API key lives in an env var or an
 # untracked file, never in a tracked one
