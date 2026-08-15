@@ -136,9 +136,12 @@ function reverbImpulse(context: AudioContext): AudioBuffer {
 
 // A single in-flight loop. `master` is per-session so stopping can fade just
 // this session out; `voices` tracks live oscillators for a clean teardown.
+// `parts` is the set of four-chord progressions playing together on this one
+// shared clock: a single song is one part; "all five at once" is five parts,
+// each scheduled at the same beat so they start, loop and land in lock-step.
 interface Session {
   button: HTMLButtonElement;
-  labels: string[];
+  parts: string[][];
   master: GainNode;
   // The per-session warmth chain, held so stop() can disconnect every node and
   // leave nothing lingering: voices → filter → {dry, convolver→wet} → master.
@@ -244,10 +247,14 @@ function scheduleChord(active: Session, label: string, startTime: number): void 
 /** The scheduler tick: queue every chord that falls due within LOOKAHEAD. */
 function pump(active: Session): void {
   const context = getAudioContext();
+  const cycle = active.parts[0].length; // every progression is I–V–vi–IV (4)
   while (active.nextChordTime < context.currentTime + LOOKAHEAD) {
-    const index = active.step % active.labels.length;
+    const index = active.step % cycle;
     const start = active.nextChordTime;
-    scheduleChord(active, active.labels[index], start);
+    // Every part hits the SAME slot at the SAME time on the shared clock, so
+    // five songs stay synchronized: aligned they reinforce into one unison,
+    // unaligned they pile into a clash. Both read live from chords.ts.
+    for (const part of active.parts) scheduleChord(active, part[index], start);
     // Record when this chord actually sounds on the audio clock so the rAF
     // highlight can follow the ear, not the (lookahead-early) scheduling.
     active.schedule.push({ index, start, end: start + CHORD_SECONDS });
@@ -298,8 +305,11 @@ function setButtonPlaying(button: HTMLButtonElement, playing: boolean): void {
 // whole document, so every song's cell for a degree lights at once — the
 // I→V→vi→IV sweep moves across all five songs together.
 function highlightTargets(button: HTMLButtonElement): HTMLElement[][] {
-  const isHero = button.dataset.play === "hero";
-  const scope: ParentNode = isHero
+  // Hero and "all five at once" both sound every song, so they sweep the whole
+  // document's cells; a single song scopes to just its own four.
+  const wholeDocument =
+    button.dataset.play === "hero" || button.hasAttribute("data-play-all");
+  const scope: ParentNode = wholeDocument
     ? document
     : (button.closest<HTMLElement>("[data-song]") ?? document);
   return DEGREES.map((degree) =>
@@ -383,13 +393,19 @@ function stop(): void {
   }, (STOP_RAMP + RELEASE) * 1000);
 }
 
-/** Start looping `labels` (a four-chord progression), driven from `button`. */
-function start(button: HTMLButtonElement, labels: string[]): void {
+/**
+ * Start looping `parts` — one or more four-chord progressions — off a single
+ * shared clock, driven from `button`. One part is a single song; five parts is
+ * "all five at once". The master trim is divided by the part count so five
+ * aligned progressions (identical tones, summing coherently) stay under the
+ * ceiling as a fat unison instead of clipping.
+ */
+function start(button: HTMLButtonElement, parts: string[][]): void {
   stop(); // enforce the "only one thing plays" invariant
 
   const context = getAudioContext();
   const master = context.createGain();
-  master.gain.value = MASTER_GAIN;
+  master.gain.value = MASTER_GAIN / parts.length;
   master.connect(context.destination);
   // Additionally tap this session's master into the shared analyser, in
   // parallel with the destination connection above. The analyser only observes
@@ -421,7 +437,7 @@ function start(button: HTMLButtonElement, labels: string[]): void {
 
   const active: Session = {
     button,
-    labels,
+    parts,
     master,
     filter,
     convolver,
@@ -640,6 +656,27 @@ for (const button of document.querySelectorAll<HTMLButtonElement>("[data-play]")
       stop();
       return;
     }
-    start(button, chordLabelsForTonic(keyForButton(button)));
+    start(button, [chordLabelsForTonic(keyForButton(button))]);
   });
 }
+
+// "All five at once" — the collision. Every song's four chords are read LIVE
+// from its [data-song]'s data-current-key (align.ts's source of truth), so the
+// notes always match the letters on screen: unaligned they clash, aligned they
+// fuse into one unison. Same single-session model as above, so pressing a solo
+// Play stops the collision and vice-versa — the two engines never fight.
+function collisionParts(): string[][] {
+  return Array.from(
+    document.querySelectorAll<HTMLElement>("[data-song]"),
+  ).map((song) => chordLabelsForTonic(song.dataset.currentKey ?? ALIGN_KEY));
+}
+
+const playAllButton =
+  document.querySelector<HTMLButtonElement>("[data-play-all]");
+playAllButton?.addEventListener("click", () => {
+  if (session?.button === playAllButton) {
+    stop();
+    return;
+  }
+  start(playAllButton, collisionParts());
+});

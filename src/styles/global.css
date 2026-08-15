@@ -1355,6 +1355,47 @@ body {
   background-color: var(--paper-dim);
 }
 
+/* "All five at once" — the collision control. Groups a tiny A/B hint over the
+   button, mirroring how .keypicker stacks its label so the button's baseline
+   lines up with Align/Split under the controls' flex-end alignment. */
+.chorus {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.chorus__hint {
+  font-size: 0.62rem;
+  font-style: italic;
+  color: var(--ink-faint);
+}
+
+/* A distinct third affordance: paper base with a printed gold underscore so it
+   reads as the "loud one" without competing with Align's solid ink fill. */
+.btn--chorus {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: var(--paper);
+  color: var(--ink);
+  box-shadow: inset 0 -0.28rem 0 -0.04rem var(--plate-vi);
+}
+
+.btn--chorus:hover {
+  background-color: var(--paper-dim);
+}
+
+/* Playing → the same magenta "■ Stop" fill the play buttons use, so every
+   sounding control shares one visual language. */
+.btn--chorus[aria-pressed="true"] {
+  background-color: var(--plate-v);
+  border-color: var(--plate-v);
+  color: #fff;
+  box-shadow: none;
+}
+
 /* --- Verdict -------------------------------------------------------------- */
 
 .verdict {

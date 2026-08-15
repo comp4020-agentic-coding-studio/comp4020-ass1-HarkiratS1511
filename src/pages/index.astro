@@ -571,6 +571,26 @@ const EXHIBIT = (index: number) => String.fromCharCode(65 + index);
             <button class="btn btn--ghost" type="button" data-reset>
               Split apart
             </button>
+            {/* "Hear the collision": plays all five songs' four-chord loops at
+                once on one shared clock. It reads each song's CURRENT key, so
+                split it's a pile-up and aligned it's one fat unison — the A/B
+                the visitor drives. A real <button> with aria-pressed; audio.ts
+                toggles it and swaps the glyph/label to the ■ Stop state. */}
+            <div class="chorus">
+              <span class="chorus__hint" aria-hidden="true">
+                split = clash &middot; aligned = unison
+              </span>
+              <button
+                class="btn btn--chorus"
+                type="button"
+                data-play-all
+                aria-pressed="false"
+                aria-label="Play all five songs at once"
+              >
+                <span class="playbtn__glyph" aria-hidden="true">&#9654;</span>
+                <span>All Five at Once</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
