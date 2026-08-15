@@ -15,13 +15,26 @@ import { ALIGN_KEY, chordFrequencies, chordLabelsForTonic } from "../lib/chords"
 // --- Musical constants -----------------------------------------------------
 
 const CHORD_SECONDS = 0.68; // how long each chord sounds before the next
-const ATTACK = 0.015; // fade-in, seconds
+const ATTACK = 0.022; // fade-in, seconds — slightly rounded so onsets aren't abrupt
 const DECAY = 0.12; // fall from peak to the sustain level
-const RELEASE = 0.14; // fade-out tail after the chord's slot ends
+const RELEASE = 0.18; // fade-out tail after the chord's slot ends — softened, still articulate
 const PEAK_GAIN = 0.16; // per-note level; ×3 stacked stays under the master
 const SUSTAIN_GAIN = 0.11; // held level between decay and release
 const MASTER_GAIN = 0.9; // shared output trim, low enough to avoid clipping
 const STOP_RAMP = 0.06; // gain ramp when stopping, seconds — kills clicks
+
+// --- Warmth chain: a lowpass to round the tone + a small synthetic room -----
+// These only shape *timbre and space*, never pitch or timing: the triangle's
+// upper partials are the harsh part, so a gentle lowpass rounds them off, and a
+// short reverb tail (a small room, not a hall) glues the triad together. The
+// reverb is a parallel wet send mixed softly under a near-unity dry signal, so
+// chords stay clearly articulated.
+const FILTER_CUTOFF = 2800; // Hz — well above the triad tones, tames triangle fizz
+const FILTER_Q = 0.7; // gentle slope, no resonant bump
+const REVERB_SECONDS = 1.5; // impulse length — short, small-room decay
+const REVERB_DECAY = 3.2; // exponential steepness of the impulse tail
+const DRY_GAIN = 0.9; // the direct, un-reverbed path
+const WET_GAIN = 0.3; // the reverb send, kept soft so it warms without washing out
 
 // Lookahead scheduler: a JS timer wakes often and queues any chords that fall
 // due within the next LOOKAHEAD seconds, so timing rides the accurate audio
@@ -51,6 +64,31 @@ function getAudioContext(): AudioContext {
   return audioContext;
 }
 
+// The reverb's impulse response: an exponentially-decaying burst of noise,
+// synthesised in code (there is no network/asset to fetch). Convolving the dry
+// signal with this is what produces the "room" tail. Randomness lives ONLY here
+// in the reverb tail — it never touches a note's pitch or a chord's timing — so
+// the thesis-in-sound invariant (identical oscillator frequencies per play) is
+// untouched. Cached at module scope because the buffer is immutable, read-only
+// data safely shared across sessions; each session still gets its own
+// ConvolverNode so stopping one silences it completely.
+let impulseBuffer: AudioBuffer | null = null;
+function reverbImpulse(context: AudioContext): AudioBuffer {
+  if (impulseBuffer) return impulseBuffer;
+  const length = Math.floor(context.sampleRate * REVERB_SECONDS);
+  const buffer = context.createBuffer(2, length, context.sampleRate);
+  for (let channel = 0; channel < buffer.numberOfChannels; channel += 1) {
+    const data = buffer.getChannelData(channel);
+    for (let i = 0; i < length; i += 1) {
+      // White noise faded out along an exponential curve → a natural decay.
+      const remaining = 1 - i / length;
+      data[i] = (Math.random() * 2 - 1) * remaining ** REVERB_DECAY;
+    }
+  }
+  impulseBuffer = buffer;
+  return buffer;
+}
+
 // --- Playback state --------------------------------------------------------
 
 // A single in-flight loop. `master` is per-session so stopping can fade just
@@ -59,6 +97,12 @@ interface Session {
   button: HTMLButtonElement;
   labels: string[];
   master: GainNode;
+  // The per-session warmth chain, held so stop() can disconnect every node and
+  // leave nothing lingering: voices → filter → {dry, convolver→wet} → master.
+  filter: BiquadFilterNode;
+  convolver: ConvolverNode;
+  dry: GainNode;
+  wet: GainNode;
   voices: Set<OscillatorNode>;
   timer: number;
   nextChordTime: number;
@@ -92,7 +136,8 @@ function scheduleChord(active: Session, label: string, startTime: number): void 
     level.setValueAtTime(SUSTAIN_GAIN, end - RELEASE);
     level.linearRampToValueAtTime(0, end);
 
-    osc.connect(gain).connect(active.master);
+    // Into the warmth chain (filter → dry/wet → master), not straight to master.
+    osc.connect(gain).connect(active.filter);
     osc.start(startTime);
     osc.stop(end + RELEASE);
 
@@ -235,11 +280,15 @@ function stop(): void {
     }
   }
 
-  // Disconnect the master once its tail has finished.
-  window.setTimeout(
-    () => active.master.disconnect(),
-    (STOP_RAMP + RELEASE) * 1000,
-  );
+  // Disconnect the whole graph once its tail has finished — master AND the
+  // warmth chain — so no node (or reverb tail) lingers past the fade.
+  window.setTimeout(() => {
+    active.master.disconnect();
+    active.filter.disconnect();
+    active.convolver.disconnect();
+    active.dry.disconnect();
+    active.wet.disconnect();
+  }, (STOP_RAMP + RELEASE) * 1000);
 }
 
 /** Start looping `labels` (a four-chord progression), driven from `button`. */
@@ -251,10 +300,36 @@ function start(button: HTMLButtonElement, labels: string[]): void {
   master.gain.value = MASTER_GAIN;
   master.connect(context.destination);
 
+  // Build the warmth chain per session (mirroring how `master` is owned per
+  // session) so stopping this session disconnects it and fully silences it.
+  // A lowpass rounds off the triangle's fizz, then the signal splits into a
+  // near-unity DRY path and a soft WET reverb send, both summing into master:
+  //   filter → dry ─────────────→ master
+  //   filter → convolver → wet ─→ master
+  const filter = context.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.value = FILTER_CUTOFF;
+  filter.Q.value = FILTER_Q;
+
+  const convolver = context.createConvolver();
+  convolver.buffer = reverbImpulse(context);
+
+  const dry = context.createGain();
+  dry.gain.value = DRY_GAIN;
+  const wet = context.createGain();
+  wet.gain.value = WET_GAIN;
+
+  filter.connect(dry).connect(master);
+  filter.connect(convolver).connect(wet).connect(master);
+
   const active: Session = {
     button,
     labels,
     master,
+    filter,
+    convolver,
+    dry,
+    wet,
     voices: new Set<OscillatorNode>(),
     timer: 0,
     nextChordTime: context.currentTime + 0.05, // tiny lead-in for a clean onset
