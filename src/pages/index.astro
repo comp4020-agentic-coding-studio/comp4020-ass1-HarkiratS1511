@@ -49,6 +49,14 @@ const ROLE_COPY: Record<Degree, string> = {
 
 // Exhibit letters A–E map from song index 0→A … 4→E.
 const EXHIBIT = (index: number) => String.fromCharCode(65 + index);
+
+// "Write your own hit" — the songwriter section. Its four chips are seeded in
+// the default key straight from chords.ts (never hard-coded letters), in the
+// canonical I → V → vi → IV order; forge.ts relabels them live on key change
+// and reorders them on drag/keyboard. Default to A so the visitor lands on a
+// real, recognisable hit ("Someone Like You").
+const FORGE_KEY = "A";
+const FORGE_CHIPS = chordsForTonic(FORGE_KEY);
 ---
 
 <Layout title="Every pop song is the same four chords">
@@ -62,6 +70,7 @@ const EXHIBIT = (index: number) => String.fromCharCode(65 + index);
         <li><a href="#hook">The claim</a></li>
         <li><a href="#lineup">The lineup</a></li>
         <li><a href="#reveal">Align</a></li>
+        <li><a href="#forge">Write your own</a></li>
         <li><a href="#verdict">The verdict</a></li>
       </ul>
     </nav>
@@ -178,6 +187,7 @@ const EXHIBIT = (index: number) => String.fromCharCode(65 + index);
             <ul>
               <li><a href="#primer">A primer for new readers</a></li>
               <li><a href="#lineup">The evidence</a></li>
+              <li><a href="#forge">Write your own hit</a></li>
               <li><a href="#verdict">The verdict</a></li>
             </ul>
           </nav>
@@ -596,6 +606,119 @@ const EXHIBIT = (index: number) => String.fromCharCode(65 + index);
       </div>
     </section>
 
+    <!-- Scene 3.5 — the payoff: the visitor becomes the songwriter. Same four
+         chords, arranged by hand; the page names — honestly — what they built. -->
+    <section class="forge" id="forge" data-forge>
+      <div class="forge__inner">
+        <h2 class="section-head">
+          Write Your Own Hit
+          <span class="section-head__note">
+            you take the desk &mdash; arrange the four, we name the tune
+          </span>
+        </h2>
+        <p class="forge__lede">
+          Same four chords. Your order. Drag them into any sequence &mdash; or
+          focus one and nudge it with the arrow keys &mdash; pick a key, and
+          press play. We&rsquo;ll tell you which hit you just wrote. The catch,
+          and the whole point: only a small handful of orders are ones the world
+          already knows.
+        </p>
+
+        <div class="forge__console">
+          <div class="forge__bar">
+            <label class="keypicker forge__key">
+              <span class="keypicker__label">Your key</span>
+              <select class="keypicker__select" data-forge-key>
+                {
+                  KEYS.map((key) => (
+                    <option value={key} selected={key === FORGE_KEY}>
+                      {key} major
+                    </option>
+                  ))
+                }
+              </select>
+            </label>
+
+            <div class="forge__actions">
+              <button
+                class="playbtn playbtn--forge"
+                type="button"
+                data-forge-play
+                aria-pressed="false"
+                aria-label="Play your arrangement"
+              >
+                <span class="playbtn__glyph" aria-hidden="true">&#9654;</span>
+                <span>Play your hit</span>
+              </button>
+              <button
+                class="btn btn--drum"
+                type="button"
+                data-forge-drum
+                aria-pressed="false"
+                aria-label="Toggle a drum click on each beat"
+              >
+                Drum click
+              </button>
+            </div>
+          </div>
+
+          <ol
+            class="forge__slots"
+            data-forge-slots
+            aria-label="Your four-chord arrangement, in order"
+          >
+            {
+              FORGE_CHIPS.map((chord, index) => (
+                <li class="forge__slot" data-forge-slot={index}>
+                  <span class="forge__slotno" aria-hidden="true">
+                    {index + 1}
+                  </span>
+                  <button
+                    class="forge__chip"
+                    type="button"
+                    data-forge-chip
+                    data-degree={chord.degree}
+                    aria-label={`Chord ${index + 1} of 4, the ${chord.degree} (${chord.label}). Use arrow keys to reorder.`}
+                  >
+                    <span class="forge__handle" aria-hidden="true">
+                      &#8801;
+                    </span>
+                    <span class="forge__chip-letter" data-forge-chip-letter>
+                      {chord.label}
+                    </span>
+                    <span class="forge__chip-degree" aria-hidden="true">
+                      {chord.roman}
+                    </span>
+                  </button>
+                </li>
+              ))
+            }
+          </ol>
+
+          {/* The recognition payoff. Updated live by forge.ts as the order or
+              key changes; aria-live so screen readers hear the new verdict. */}
+          <div
+            class="forge__verdict"
+            data-forge-verdict
+            role="status"
+            aria-live="polite"
+          >
+            <p class="forge__verdict-kicker" aria-hidden="true">
+              The desk&rsquo;s verdict
+            </p>
+            <p class="forge__verdict-name" data-forge-verdict-name>The Axis</p>
+            <p class="forge__verdict-body" data-forge-verdict-body>
+              The most-used order in pop. I &rarr; V &rarr; vi &rarr; IV.
+            </p>
+            <p class="forge__verdict-songs" data-forge-verdict-songs>
+              In the key of A, that&rsquo;s the exact progression under
+              &ldquo;Someone Like You&rdquo; (Adele).
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Scene 4 — the verdict -->
     <section class="verdict" id="verdict">
       <p class="verdict__pov">
@@ -622,4 +745,5 @@ const EXHIBIT = (index: number) => String.fromCharCode(65 + index);
   <script src="../scripts/roles.ts"></script>
   <script src="../scripts/keygloss.ts"></script>
   <script src="../scripts/primer.ts"></script>
+  <script src="../scripts/forge.ts"></script>
 </Layout>

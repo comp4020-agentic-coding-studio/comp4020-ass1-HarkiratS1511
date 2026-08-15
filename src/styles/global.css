@@ -1432,6 +1432,203 @@ body {
   right: 0;
 }
 
+/* --- Write your own hit (the songwriter) ---------------------------------- */
+
+.forge {
+  border-top: 4px solid var(--ink);
+}
+
+.forge__inner {
+  width: var(--spine);
+  margin-inline: auto;
+  padding-block: clamp(2rem, 5vw, 3.5rem);
+}
+
+.forge__lede {
+  max-width: 60ch;
+  margin: 0 0 1.75rem;
+  font-size: 1.02rem;
+  color: var(--ink-soft);
+}
+
+.forge__console {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.forge__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem 1.25rem;
+}
+
+.forge__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.playbtn--forge {
+  padding: 0.6rem 1.15rem;
+  font-size: 0.9rem;
+  background-color: var(--ink);
+  color: var(--paper);
+}
+
+.playbtn--forge:hover {
+  background-color: var(--ink-soft);
+}
+
+/* The drum toggle: a quiet ghost control until armed, then it fills cyan so it
+   reads as "on" without competing with the magenta ■ Stop state of Play. */
+.btn--drum {
+  background-color: var(--paper);
+  color: var(--ink);
+}
+
+.btn--drum:hover {
+  background-color: var(--paper-dim);
+}
+
+.btn--drum[aria-pressed="true"] {
+  background-color: var(--plate-i);
+  border-color: var(--plate-i);
+  color: #fff;
+}
+
+/* The four slots: a printed socket row the chips sit in. Always four columns so
+   the arrangement never wraps or overflows either marked viewport. */
+.forge__slots {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(0.5rem, 2vw, 1rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.forge__slot {
+  position: relative;
+  min-width: 0;
+  display: grid;
+  padding: 1.35rem 0.3rem 0.3rem;
+  border: 1px dashed var(--rule-light);
+  border-radius: 2px;
+  background-color: var(--paper-dim);
+}
+
+.forge__slotno {
+  position: absolute;
+  top: 0.35rem;
+  left: 0.5rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--ink-faint);
+}
+
+/* The chip: a draggable lead-type block that carries its plate hue via
+   [data-degree]. touch-action:none so a touch-drag reorders instead of
+   scrolling the page. */
+.forge__chip {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  width: 100%;
+  padding: 0.55rem 0.3rem 0.5rem;
+  border: 1px solid var(--ink);
+  border-top: 6px solid var(--plate);
+  border-radius: 2px;
+  background-color: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  cursor: grab;
+  touch-action: none;
+  transition:
+    transform 0.14s ease,
+    box-shadow 0.14s ease;
+}
+
+.forge__chip:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.forge__chip--dragging {
+  cursor: grabbing;
+  z-index: 8;
+  box-shadow: 0 8px 20px rgb(32 30 29 / 30%);
+  transform: scale(1.06);
+}
+
+.forge__handle {
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--ink-faint);
+}
+
+.forge__chip-letter {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.2rem, 3.5vw, 1.7rem);
+  line-height: 1;
+  color: var(--ink);
+}
+
+.forge__chip-degree {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--plate-text);
+}
+
+/* The desk's verdict: a stamped ruling that updates live as the order changes. */
+.forge__verdict {
+  padding: 1rem 1.15rem;
+  border: 2px solid var(--ink);
+  border-radius: 2px;
+  background-color: var(--paper);
+  box-shadow: inset 0 -0.28rem 0 -0.04rem var(--plate-vi);
+}
+
+.forge__verdict-kicker {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--ink-faint);
+}
+
+.forge__verdict-name {
+  margin: 0.2rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.forge__verdict-body {
+  margin: 0.4rem 0 0;
+  max-width: 60ch;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.forge__verdict-songs {
+  margin: 0.3rem 0 0;
+  max-width: 60ch;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
 /* --- Responsive ----------------------------------------------------------- */
 
 @media (width <= 52rem) {
@@ -1542,5 +1739,13 @@ body {
   .primer__mark::before,
   .primer__mark::after {
     transition: none;
+  }
+
+  .forge__chip {
+    transition: none;
+  }
+
+  .forge__chip--dragging {
+    transform: none;
   }
 }

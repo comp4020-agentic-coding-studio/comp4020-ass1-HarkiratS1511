@@ -44,6 +44,15 @@ const BASS_OCTAVE = 0.5; // ×0.5 = one octave down, for weight under the triad
 const MASTER_GAIN = 0.82; // shared output trim, lowered now that a bass note stacks
 const STOP_RAMP = 0.06; // gain ramp when stopping, seconds — kills clicks
 
+// Optional metronome click (the songwriter's drum toggle). A tight square-wave
+// blip with a near-instant attack and a fast exponential decay reads as a woody
+// tick, not a tone. Kept deliberately quiet — a beat you feel under the chords,
+// never one that fights them — and sent DRY straight to master (no reverb) so it
+// stays crisp. It only sounds when a session opts in via start()'s `drum` flag.
+const CLICK_FREQ = 1750; // Hz — high and short, so it reads as a percussive tick
+const CLICK_PEAK = 0.09; // attack level — subtle under the triad (×master trim)
+const CLICK_DECAY = 0.035; // seconds — a blip, gone before the next off-beat
+
 // --- Warmth chain: a lowpass to round the tone + a small synthetic room -----
 // These only shape *timbre and space*, never pitch or timing: the triangle's
 // upper partials are the harsh part, so a gentle lowpass rounds them off, and a
@@ -142,6 +151,10 @@ function reverbImpulse(context: AudioContext): AudioBuffer {
 interface Session {
   button: HTMLButtonElement;
   parts: string[][];
+  // Whether this session ticks a metronome click on each beat (forge's drum
+  // toggle). Single songs and the collision leave it off; only the songwriter
+  // opts in. Read live in pump() so it schedules a click per chord slot.
+  drum: boolean;
   master: GainNode;
   // The per-session warmth chain, held so stop() can disconnect every node and
   // leave nothing lingering: voices → filter → {dry, convolver→wet} → master.
@@ -244,6 +257,33 @@ function scheduleChord(active: Session, label: string, startTime: number): void 
   }
 }
 
+/** Schedule one metronome tick at `startTime` — a dry, fast-decaying blip. */
+function scheduleClick(active: Session, startTime: number): void {
+  const context = getAudioContext();
+  const osc = context.createOscillator();
+  osc.type = "square"; // a square edge reads as a woody tick, not a pitch
+  osc.frequency.value = CLICK_FREQ;
+
+  const gain = context.createGain();
+  const level = gain.gain;
+  level.setValueAtTime(0, startTime);
+  level.linearRampToValueAtTime(CLICK_PEAK, startTime + 0.001);
+  // exponential can't reach 0 — ramp to a floor, then the osc stops.
+  level.exponentialRampToValueAtTime(0.0001, startTime + CLICK_DECAY);
+
+  // Straight to master (no filter/reverb) so it stays crisp and un-washed.
+  osc.connect(gain).connect(active.master);
+  osc.start(startTime);
+  osc.stop(startTime + CLICK_DECAY + 0.01);
+
+  active.voices.add(osc);
+  osc.onended = (): void => {
+    osc.disconnect();
+    gain.disconnect();
+    active.voices.delete(osc);
+  };
+}
+
 /** The scheduler tick: queue every chord that falls due within LOOKAHEAD. */
 function pump(active: Session): void {
   const context = getAudioContext();
@@ -255,6 +295,8 @@ function pump(active: Session): void {
     // five songs stay synchronized: aligned they reinforce into one unison,
     // unaligned they pile into a clash. Both read live from chords.ts.
     for (const part of active.parts) scheduleChord(active, part[index], start);
+    // A quiet metronome tick on the downbeat of each slot, when opted in.
+    if (active.drum) scheduleClick(active, start);
     // Record when this chord actually sounds on the audio clock so the rAF
     // highlight can follow the ear, not the (lookahead-early) scheduling.
     active.schedule.push({ index, start, end: start + CHORD_SECONDS });
@@ -305,6 +347,11 @@ function setButtonPlaying(button: HTMLButtonElement, playing: boolean): void {
 // whole document, so every song's cell for a degree lights at once — the
 // I→V→vi→IV sweep moves across all five songs together.
 function highlightTargets(button: HTMLButtonElement): HTMLElement[][] {
+  // The songwriter (forge) plays the visitor's OWN arrangement, whose slot
+  // order need not match the exhibits' fixed I–V–vi–IV cells — lighting those
+  // would map the wrong degree to the wrong moment. So it lights nothing on the
+  // exhibits; its own section reacts via the shared visualizer instead.
+  if (button.hasAttribute("data-forge-play")) return DEGREES.map(() => []);
   // Hero and "all five at once" both sound every song, so they sweep the whole
   // document's cells; a single song scopes to just its own four.
   const wholeDocument =
@@ -354,8 +401,13 @@ function followPlayhead(active: Session): void {
 
 // --- Start / stop ----------------------------------------------------------
 
+/** The button driving the current loop, or null when nothing is playing. */
+export function playingButton(): HTMLButtonElement | null {
+  return session?.button ?? null;
+}
+
 /** Stop the current loop (if any), fading out cleanly and freeing its nodes. */
-function stop(): void {
+export function stop(): void {
   if (!session) return;
   const active = session;
   session = null;
@@ -398,9 +450,14 @@ function stop(): void {
  * shared clock, driven from `button`. One part is a single song; five parts is
  * "all five at once". The master trim is divided by the part count so five
  * aligned progressions (identical tones, summing coherently) stay under the
- * ceiling as a fat unison instead of clipping.
+ * ceiling as a fat unison instead of clipping. `options.drum` opts this session
+ * into a quiet metronome tick on each beat (the songwriter's drum toggle).
  */
-function start(button: HTMLButtonElement, parts: string[][]): void {
+export function start(
+  button: HTMLButtonElement,
+  parts: string[][],
+  options: { drum?: boolean } = {},
+): void {
   stop(); // enforce the "only one thing plays" invariant
 
   const context = getAudioContext();
@@ -438,6 +495,7 @@ function start(button: HTMLButtonElement, parts: string[][]): void {
   const active: Session = {
     button,
     parts,
+    drum: options.drum ?? false,
     master,
     filter,
     convolver,
