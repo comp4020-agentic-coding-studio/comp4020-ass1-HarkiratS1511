@@ -639,6 +639,29 @@ body {
 
 .primer__term {
   margin: 0 0 0.25rem;
+}
+
+/* The question itself is now a full-width button — tapping (or Enter/Space,
+   since click fires natively for both on a <button>) reveals its answer.
+   Reset all button chrome and carry over the exact typography .primer__term
+   used to set directly, so the question still *reads* like the plain label
+   it was, just operable now. */
+.primer__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.primer__q {
   font-size: 0.78rem;
   font-weight: 600;
   letter-spacing: 0.1em;
@@ -646,8 +669,62 @@ body {
   color: var(--ink);
 }
 
+/* CSS-drawn +/− affordance: two crossed bars that collapse into one when the
+   card opens. No icon font, no image. */
+.primer__mark {
+  position: relative;
+  flex: none;
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.primer__mark::before,
+.primer__mark::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.8rem;
+  height: 2px;
+  background-color: var(--ink);
+  transform: translate(-50%, -50%);
+  transition: transform 0.2s ease;
+}
+
+.primer__mark::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.primer__card[data-open] .primer__mark::after {
+  transform: translate(-50%, -50%) rotate(0deg);
+}
+
+/* Reveal via grid-template-rows, not max-height: these answers are variable
+   length, and a max-height cap crops whichever ones run past it. Animating
+   the track from 0fr to 1fr grows to the content's natural height instead,
+   with zero crop risk. */
 .primer__def {
   margin: 0;
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 0.28s ease,
+    opacity 0.28s ease;
+}
+
+.primer__card[data-open] .primer__def {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+/* overflow: hidden + min-height: 0 is what lets the 0fr track above actually
+   collapse to zero — without them the row keeps its content's min-content
+   height regardless of the track sizing. */
+.primer__def-inner {
+  overflow: hidden;
+  min-height: 0;
+  padding-top: 0.25rem;
   font-size: 0.95rem;
   color: var(--ink-soft);
 }
@@ -1417,6 +1494,12 @@ body {
   .chord__role,
   .keygloss__tip {
     transform: none;
+    transition: none;
+  }
+
+  .primer__def,
+  .primer__mark::before,
+  .primer__mark::after {
     transition: none;
   }
 }

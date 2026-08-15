@@ -199,44 +199,101 @@ const EXHIBIT = (index: number) => String.fromCharCode(65 + index);
 
         <div class="primer__body">
           <dl class="primer__glossary">
-            <div class="primer__card">
-              <dt class="primer__term">What&rsquo;s a chord?</dt>
-              <dd class="primer__def">
-                A chord is just a few notes played at the same time. Strum a
-                guitar or press three piano keys together &mdash; that&rsquo;s a
-                chord. Almost every song is built from a handful of them, played
-                in a loop.
+            <div class="primer__card" data-primer-card data-open>
+              <dt class="primer__term">
+                <button
+                  class="primer__toggle"
+                  type="button"
+                  data-primer-toggle
+                  aria-expanded="true"
+                  aria-controls="primer-def-1"
+                >
+                  <span class="primer__q">What&rsquo;s a chord?</span>
+                  <span class="primer__mark" aria-hidden="true"></span>
+                </button>
+              </dt>
+              <dd class="primer__def" id="primer-def-1" data-primer-def>
+                <div class="primer__def-inner">
+                  A chord is just a few notes played at the same time. Strum a
+                  guitar or press three piano keys together &mdash; that&rsquo;s
+                  a chord. Almost every song is built from a handful of them,
+                  played in a loop.
+                </div>
               </dd>
             </div>
-            <div class="primer__card">
-              <dt class="primer__term">Why the letters (C, G, Am, F)?</dt>
-              <dd class="primer__def">
-                Each chord has a name. C, G and F are <em>major</em> chords
-                &mdash; bright and settled. The little <strong>m</strong> in A<strong
-                  >m</strong
-                > means <em>minor</em> &mdash; a softer, sadder sound. That&rsquo;s
-                the whole alphabet you need here.
+            <div class="primer__card" data-primer-card>
+              <dt class="primer__term">
+                <button
+                  class="primer__toggle"
+                  type="button"
+                  data-primer-toggle
+                  aria-expanded="false"
+                  aria-controls="primer-def-2"
+                >
+                  <span class="primer__q"
+                    >Why the letters (C, G, Am, F)?</span
+                  >
+                  <span class="primer__mark" aria-hidden="true"></span>
+                </button>
+              </dt>
+              <dd class="primer__def" id="primer-def-2" data-primer-def>
+                <div class="primer__def-inner">
+                  Each chord has a name. C, G and F are <em>major</em> chords
+                  &mdash; bright and settled. The little <strong>m</strong> in A<strong
+                    >m</strong
+                  > means <em>minor</em> &mdash; a softer, sadder sound. That&rsquo;s
+                  the whole alphabet you need here.
+                </div>
               </dd>
             </div>
-            <div class="primer__card">
-              <dt class="primer__term">What&rsquo;s a &lsquo;key&rsquo;?</dt>
-              <dd class="primer__def">
-                A song&rsquo;s <em>key</em> is the note it treats as home &mdash;
-                where it feels like it starts and rests. Move a song to a
-                different key and every chord name changes, but the song sounds
-                exactly the same, just higher or lower &mdash; like singing Happy
-                Birthday starting on a higher note: same tune, different pitch.
+            <div class="primer__card" data-primer-card>
+              <dt class="primer__term">
+                <button
+                  class="primer__toggle"
+                  type="button"
+                  data-primer-toggle
+                  aria-expanded="false"
+                  aria-controls="primer-def-3"
+                >
+                  <span class="primer__q"
+                    >What&rsquo;s a &lsquo;key&rsquo;?</span
+                  >
+                  <span class="primer__mark" aria-hidden="true"></span>
+                </button>
+              </dt>
+              <dd class="primer__def" id="primer-def-3" data-primer-def>
+                <div class="primer__def-inner">
+                  A song&rsquo;s <em>key</em> is the note it treats as home
+                  &mdash; where it feels like it starts and rests. Move a song
+                  to a different key and every chord name changes, but the
+                  song sounds exactly the same, just higher or lower &mdash;
+                  like singing Happy Birthday starting on a higher note: same
+                  tune, different pitch.
+                </div>
               </dd>
             </div>
-            <div class="primer__card">
-              <dt class="primer__term">What are I, V, vi, IV?</dt>
-              <dd class="primer__def">
-                Instead of names, musicians number the four chords by their
-                <em>job</em> in the song: <strong>I, V, vi, IV</strong> (one,
-                five, six, four). The trick: these numbers stay the same in
-                <em>every</em> key &mdash; they&rsquo;re the four &lsquo;slots&rsquo;
-                the pattern lives in. Notice <strong>vi</strong> is lowercase: it&rsquo;s
-                the one minor chord of the four.
+            <div class="primer__card" data-primer-card>
+              <dt class="primer__term">
+                <button
+                  class="primer__toggle"
+                  type="button"
+                  data-primer-toggle
+                  aria-expanded="false"
+                  aria-controls="primer-def-4"
+                >
+                  <span class="primer__q">What are I, V, vi, IV?</span>
+                  <span class="primer__mark" aria-hidden="true"></span>
+                </button>
+              </dt>
+              <dd class="primer__def" id="primer-def-4" data-primer-def>
+                <div class="primer__def-inner">
+                  Instead of names, musicians number the four chords by their
+                  <em>job</em> in the song: <strong>I, V, vi, IV</strong> (one,
+                  five, six, four). The trick: these numbers stay the same in
+                  <em>every</em> key &mdash; they&rsquo;re the four &lsquo;slots&rsquo;
+                  the pattern lives in. Notice <strong>vi</strong> is lowercase:
+                  it&rsquo;s the one minor chord of the four.
+                </div>
               </dd>
             </div>
           </dl>
@@ -544,4 +601,5 @@ const EXHIBIT = (index: number) => String.fromCharCode(65 + index);
   <script src="../scripts/audio.ts"></script>
   <script src="../scripts/roles.ts"></script>
   <script src="../scripts/keygloss.ts"></script>
+  <script src="../scripts/primer.ts"></script>
 </Layout>
