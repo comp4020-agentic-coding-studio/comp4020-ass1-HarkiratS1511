@@ -306,10 +306,10 @@ const EXHIBIT = (index: number) => String.fromCharCode(65 + index);
           <p class="primer__punchline">
             Every exhibit below fills those same four slots. They only
             <em>look</em> different because each one sits in its own key. Press
-            <strong>Align</strong> in the press room at the foot of the page (or
-            scrub the key slider) and all five move into one key &mdash; the
-            letters become identical while the numbers I V vi IV never move.
-            That&rsquo;s the whole story.
+            <strong>Align</strong> in the press room at the foot of the page and
+            all five move into one key &mdash; the letters become identical
+            while the numbers I V vi IV never move. That&rsquo;s the whole
+            story.
           </p>
         </div>
       </details>
@@ -485,35 +485,18 @@ const EXHIBIT = (index: number) => String.fromCharCode(65 + index);
               (&ldquo;Transpose&rdquo; just means move every song into the same
               key.)
             </p>
+            {/* The payoff: only revealed once [data-stage] flips to
+                data-aligned="true" (align.ts sets that attribute; this
+                paragraph does no work of its own). Hidden/shown purely by the
+                CSS rule pinned to that same attribute in global.css. */}
+            <p class="reveal__payoff" data-reveal-payoff>
+              Once aligned, the five recordings share not just a key but every
+              chord, in order. Press <strong>Play</strong> on any two exhibits
+              now &mdash; you are listening to one progression wearing five
+              disguises.
+            </p>
           </div>
           <div class="reveal__controls">
-            {/* Key-morph slider: scrub to transpose all five songs continuously
-                through the 12 keys. Its 12 positions map 1:1 to KEYS above
-                (0 = "C" … 11 = "B"); align.ts reads the integer and drives the
-                same alignTo() path as the select and button. Labelled + a live
-                readout; aria-valuetext is set to the key name so screen readers
-                announce "C major", not "0 of 11". */}
-            <div class="keyscrub">
-              <label class="keyscrub__label" for="key-slider">
-                Scrub through keys
-              </label>
-              <input
-                id="key-slider"
-                class="keyscrub__slider"
-                type="range"
-                min="0"
-                max="11"
-                step="1"
-                value="0"
-                data-key-slider
-                aria-valuetext="C major"
-              />
-              <span
-                class="keyscrub__readout"
-                data-key-readout
-                aria-hidden="true">C major</span
-              >
-            </div>
             <label class="keypicker">
               <span class="keypicker__label">Shared key</span>
               <select class="keypicker__select" data-key-select>

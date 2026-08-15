@@ -111,7 +111,6 @@ body {
 .sitenav__list a,
 .onthispage__head,
 .reveal__label,
-.keyscrub__label,
 .keypicker__label,
 .wire__label,
 .primer__note,
@@ -1145,6 +1144,33 @@ body {
   color: var(--ink-faint);
 }
 
+/* The payoff line: absent from layout until aligned, then eased in. Padding
+   (not margin) carries the top gap so the collapse via max-height leaves no
+   residual space above it while hidden — margin on a max-height: 0 element
+   would still show as a gap. Capped generously so it never clips the copy
+   at either marked viewport. */
+.reveal__payoff {
+  margin: 0;
+  max-width: 42ch;
+  padding-top: 0;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition:
+    opacity 0.25s ease,
+    max-height 0.25s ease,
+    padding-top 0.25s ease;
+}
+
+[data-stage][data-aligned="true"] .reveal__payoff {
+  padding-top: 0.5rem;
+  opacity: 1;
+  max-height: 6rem;
+}
+
 .reveal__controls {
   display: flex;
   flex-wrap: wrap;
@@ -1152,31 +1178,9 @@ body {
   gap: 0.75rem 1rem;
 }
 
-.keyscrub {
-  display: flex;
-  flex: 1 1 12rem;
-  flex-direction: column;
-  gap: 0.2rem;
-  min-width: 0;
-}
-
-.keyscrub__label,
 .keypicker__label {
   font-size: 0.62rem;
   color: var(--ink-faint);
-}
-
-.keyscrub__slider {
-  width: 100%;
-  margin: 0.15rem 0;
-  accent-color: var(--plate-i);
-  cursor: pointer;
-}
-
-.keyscrub__readout {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 0.9rem;
 }
 
 .keypicker {
@@ -1313,10 +1317,6 @@ body {
 
   .lineup {
     padding-bottom: 15rem;
-  }
-
-  .keyscrub {
-    flex-basis: 100%;
   }
 
   .verdict .stamp--confirmed {
