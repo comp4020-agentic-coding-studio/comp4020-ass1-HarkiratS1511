@@ -281,6 +281,194 @@ main > section {
   font-size: 1rem;
 }
 
+/* --- Scene 1.5 — the beginner primer -------------------------------------
+   A warm, foldaway crash course between the hook and the lineup. It's a native
+   <details open>, so it's keyboard-operable and collapsible with zero JS. Every
+   inner block is width-constrained and wraps, so nothing here can push the
+   390px phone viewport into horizontal overflow. */
+
+.primer {
+  margin-top: clamp(1.5rem, 4vw, 2.5rem);
+}
+
+.primer__box {
+  border: 1px solid var(--rule);
+  border-radius: 0.9rem;
+  background-color: var(--paper-sunk);
+  box-shadow: 0 1px 0 #ffffff80 inset;
+}
+
+.primer__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 0.9rem;
+  padding: 1.1rem clamp(1rem, 3vw, 1.5rem);
+  cursor: pointer;
+  list-style: none;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.15rem, 3vw, 1.5rem);
+  border-radius: 0.9rem;
+}
+
+/* Swap the native disclosure triangle for a tidy custom marker. */
+.primer__summary::-webkit-details-marker {
+  display: none;
+}
+
+.primer__summary::after {
+  content: "Show more";
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.primer__box[open] .primer__summary::after {
+  content: "Show less";
+}
+
+.primer__summary:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.primer__summary-note {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: 0.85rem;
+  color: var(--ink-faint);
+}
+
+.primer__body {
+  padding: 0 clamp(1rem, 3vw, 1.5rem) clamp(1.2rem, 3vw, 1.75rem);
+}
+
+.primer__glossary {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 0.9rem;
+}
+
+.primer__card {
+  min-width: 0;
+  padding: 0.9rem 1rem;
+  background-color: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 0.6rem;
+}
+
+.primer__term {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.02rem;
+  color: var(--ink);
+}
+
+.primer__def {
+  margin: 0.4rem 0 0;
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+}
+
+.primer__def strong {
+  color: var(--ink);
+}
+
+/* Worked example: two keys, same slots. */
+.primer__example {
+  margin: 1.1rem 0 0;
+  padding: 1rem clamp(0.9rem, 3vw, 1.25rem);
+  background-color: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 0.6rem;
+}
+
+.primer__example-title {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.worked {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.worked__case {
+  min-width: 0;
+}
+
+.worked__key {
+  margin: 0 0 0.4rem;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
+.worked__key strong {
+  color: var(--ink);
+}
+
+.worked__chords {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.4rem;
+}
+
+.worked__chip {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.4rem 0.25rem;
+  border-top: 4px solid var(--degree-color);
+  background-color: var(--paper-sunk);
+  border-radius: 0 0 0.3rem 0.3rem;
+}
+
+.worked__slot {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--degree-color-text);
+}
+
+.worked__letter {
+  font-family: var(--font-mono);
+  font-size: clamp(1rem, 3.5vw, 1.25rem);
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.worked__caption {
+  margin: 0.85rem 0 0;
+  font-size: 0.9rem;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+.primer__punchline {
+  margin: 1.1rem 0 0;
+  max-width: 60ch;
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+.primer__punchline strong {
+  font-weight: 700;
+}
+
 /* --- Scene 2 — the lineup ------------------------------------------------- */
 
 .stage {
@@ -320,6 +508,7 @@ main > section {
 }
 
 .song__meta {
+  position: relative; /* anchor for the key-term gloss popover */
   min-width: 0;
 }
 
@@ -351,9 +540,84 @@ main > section {
   color: var(--ink-faint);
 }
 
-.song__key span {
+.song__key span[data-current-key-label] {
   color: var(--ink);
   font-weight: 600;
+}
+
+/* --- Key-term gloss on the "key of X" readout ----------------------------
+   Same accessible pattern as the chord-role explainer: an operable button names
+   the term and the explanation is a sibling role="tooltip" announced via
+   aria-describedby, kept in the a11y tree while hidden (opacity, not display).
+   Revealed on hover, keyboard focus (:focus-within), and a tap that pins it
+   ([data-open], set by keygloss.ts). Exactly like .chord__role, the tip is
+   anchored to a constrained box (.song__meta) with inset-inline: 0, so it can
+   never grow wider than that column and can't push the 390px phone viewport
+   into horizontal overflow; it's absolutely positioned so it adds no layout
+   width of its own. */
+
+.keygloss {
+  display: inline-block;
+  margin-left: 0.2rem;
+  vertical-align: baseline;
+}
+
+.keygloss__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--ink-faint);
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.keygloss__btn:hover {
+  color: var(--ink);
+}
+
+.keygloss__btn:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 999px;
+}
+
+.keygloss__tip {
+  position: absolute;
+  inset-inline: 0;
+  top: calc(100% + 0.35rem);
+  z-index: 6;
+  max-width: 100%;
+  margin: 0;
+  padding: 0.5rem 0.7rem;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--paper);
+  background-color: var(--ink);
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 24px #1b1b1b40;
+  opacity: 0;
+  transform: translateY(-0.25rem);
+  pointer-events: none;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.keygloss:hover .keygloss__tip,
+.keygloss:focus-within .keygloss__tip,
+.keygloss[data-open] .keygloss__tip {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
 }
 
 /* --- The progression: four colour-coded chord cells + the Roman row ------- */
@@ -572,6 +836,15 @@ main > section {
   font-weight: 600;
 }
 
+.reveal__note {
+  margin: 0.25rem 0 0;
+  max-width: 34ch;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--paper);
+  opacity: 0.7;
+}
+
 .reveal__controls {
   display: flex;
   flex-wrap: wrap;
@@ -741,7 +1014,7 @@ main > section {
   }
 
   .lineup {
-    padding-bottom: 11rem;
+    padding-bottom: 13rem;
   }
 
   .reveal {
@@ -794,6 +1067,12 @@ main > section {
 
   /* The role popover shows instantly: no slide-in transform, no transition. */
   .chord__role {
+    transform: none;
+    transition: none;
+  }
+
+  /* The key-term gloss shows instantly too — no slide-in, no transition. */
+  .keygloss__tip {
     transform: none;
     transition: none;
   }

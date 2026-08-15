@@ -82,13 +82,144 @@ const ROLE_COPY: Record<Degree, string> = {
         height="72"></canvas>
     </section>
 
+    <!-- Scene 1.5 — the primer: everything a zero-music-knowledge visitor needs
+         before the lineup makes sense. Native <details open> so it shows by
+         default but folds away for anyone who already knows the theory; no JS. -->
+    <section class="primer" id="primer">
+      <details class="primer__box" open>
+        <summary class="primer__summary">
+          <span class="primer__summary-text">New here? Start with this</span>
+          <span class="primer__summary-note" aria-hidden="true"
+            >a 60-second crash course</span
+          >
+        </summary>
+
+        <div class="primer__body">
+          <dl class="primer__glossary">
+            <div class="primer__card">
+              <dt class="primer__term">What&rsquo;s a chord?</dt>
+              <dd class="primer__def">
+                A chord is just a few notes played at the same time. Strum a
+                guitar or press three piano keys together &mdash; that&rsquo;s a
+                chord. Almost every song is built from a handful of them, played
+                in a loop.
+              </dd>
+            </div>
+            <div class="primer__card">
+              <dt class="primer__term">Why the letters (C, G, Am, F)?</dt>
+              <dd class="primer__def">
+                Each chord has a name. C, G and F are <em>major</em> chords
+                &mdash; bright and settled. The little <strong>m</strong> in A<strong
+                  >m</strong
+                > means <em>minor</em> &mdash; a softer, sadder sound. That&rsquo;s
+                the whole alphabet you need here.
+              </dd>
+            </div>
+            <div class="primer__card">
+              <dt class="primer__term">What&rsquo;s a &lsquo;key&rsquo;?</dt>
+              <dd class="primer__def">
+                A song&rsquo;s <em>key</em> is the note it treats as home &mdash;
+                where it feels like it starts and rests. Move a song to a
+                different key and every chord name changes, but the song sounds
+                exactly the same, just higher or lower &mdash; like singing Happy
+                Birthday starting on a higher note: same tune, different pitch.
+              </dd>
+            </div>
+            <div class="primer__card">
+              <dt class="primer__term">What are I, V, vi, IV?</dt>
+              <dd class="primer__def">
+                Instead of names, musicians number the four chords by their
+                <em>job</em> in the song: <strong>I, V, vi, IV</strong> (one,
+                five, six, four). The trick: these numbers stay the same in
+                <em>every</em> key &mdash; they&rsquo;re the four &lsquo;slots&rsquo;
+                the pattern lives in. Notice <strong>vi</strong> is lowercase: it&rsquo;s
+                the one minor chord of the four.
+              </dd>
+            </div>
+          </dl>
+
+          <figure class="primer__example">
+            <figcaption class="primer__example-title">
+              The pattern, worked out
+            </figcaption>
+            {/* Two keys, same four slots. Each chord chip carries its degree via
+                data-degree so it inherits the same hue used across the lineup —
+                colour quietly says "same slot" before a word is read. The slot
+                numerals are identical in both rows; only the letters differ. */}
+            <div class="worked">
+              <div class="worked__case">
+                <p class="worked__key">
+                  In the key of <strong>C</strong>
+                </p>
+                <div class="worked__chords">
+                  <span class="worked__chip" data-degree="I">
+                    <span class="worked__slot">I</span>
+                    <span class="worked__letter">C</span>
+                  </span>
+                  <span class="worked__chip" data-degree="V">
+                    <span class="worked__slot">V</span>
+                    <span class="worked__letter">G</span>
+                  </span>
+                  <span class="worked__chip" data-degree="vi">
+                    <span class="worked__slot">vi</span>
+                    <span class="worked__letter">Am</span>
+                  </span>
+                  <span class="worked__chip" data-degree="IV">
+                    <span class="worked__slot">IV</span>
+                    <span class="worked__letter">F</span>
+                  </span>
+                </div>
+              </div>
+              <div class="worked__case">
+                <p class="worked__key">
+                  In the key of <strong>G</strong>
+                </p>
+                <div class="worked__chords">
+                  <span class="worked__chip" data-degree="I">
+                    <span class="worked__slot">I</span>
+                    <span class="worked__letter">G</span>
+                  </span>
+                  <span class="worked__chip" data-degree="V">
+                    <span class="worked__slot">V</span>
+                    <span class="worked__letter">D</span>
+                  </span>
+                  <span class="worked__chip" data-degree="vi">
+                    <span class="worked__slot">vi</span>
+                    <span class="worked__letter">Em</span>
+                  </span>
+                  <span class="worked__chip" data-degree="IV">
+                    <span class="worked__slot">IV</span>
+                    <span class="worked__letter">C</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <figcaption class="worked__caption">
+              Different letters &mdash; but the same four slots, in the same
+              order, with the same feeling.
+            </figcaption>
+          </figure>
+
+          <p class="primer__punchline">
+            Every song below is filling those same four slots. They only
+            <em>look</em> different because each one sits in its own key. Press
+            <strong>Align</strong> (or drag the key slider) and they all move into
+            one key &mdash; the letters become identical while the numbers I V vi
+            IV never move. That&rsquo;s the whole point.
+          </p>
+        </div>
+      </details>
+    </section>
+
     <!-- Scene 2 + 3 — the lineup, with the align toolbar docked over it -->
     <section class="stage" data-stage data-aligned="false">
       <div class="lineup" id="lineup">
         <p class="lineup__lede">
-          Same shape, different keys. Right now each song sits in the key it was
-          released in, so the letters look nothing alike. Watch the Roman
-          numerals underneath &mdash; those never move.
+          Here are five hit songs, each in the key it was released in &mdash; so
+          the chord letters look nothing alike. But look at the row of numbers
+          under each one: <strong>I V vi IV</strong>, the four &lsquo;slots&rsquo;
+          from above. Those never change. That&rsquo;s the shape every song
+          shares.
         </p>
 
         <ol class="songlist">
@@ -108,6 +239,35 @@ const ROLE_COPY: Record<Degree, string> = {
                     <p class="song__section">{song.section}</p>
                     <p class="song__key">
                       key of <span data-current-key-label>{song.tonic}</span>
+                      {/* Plain-language gloss on "key", reusing the chord-role
+                          pattern: an operable button names the term, and the
+                          explanation lives OUTSIDE [data-current-key-label] as a
+                          sibling role="tooltip" (so align.ts, which rewrites the
+                          label, can never clobber it). Revealed on hover +
+                          keyboard focus purely in CSS; keygloss.ts adds only the
+                          tap-to-pin layer. Unique id per song for 1:1
+                          aria-describedby. */}
+                      <span class="keygloss" data-keygloss>
+                        <button
+                          class="keygloss__btn"
+                          type="button"
+                          data-keygloss-toggle
+                          aria-expanded="false"
+                          aria-describedby={`key-gloss-${songIndex}`}
+                          aria-label="What does “key” mean?"
+                        >
+                          <span aria-hidden="true">&#9432;</span>
+                        </button>
+                        <span
+                          class="keygloss__tip"
+                          id={`key-gloss-${songIndex}`}
+                          role="tooltip"
+                          data-keygloss-tip
+                        >
+                          The note this song treats as home. Change it and the
+                          chord letters shift, but the song stays the same.
+                        </span>
+                      </span>
                     </p>
                   </div>
 
@@ -198,6 +358,10 @@ const ROLE_COPY: Record<Degree, string> = {
             <p class="reveal__hint" data-align-status aria-live="polite">
               their own keys
             </p>
+            <p class="reveal__note">
+              (&ldquo;Transpose&rdquo; just means move every song into the same
+              key.)
+            </p>
           </div>
           <div class="reveal__controls">
             {/* Key-morph slider: scrub to transpose all five songs continuously
@@ -265,4 +429,5 @@ const ROLE_COPY: Record<Degree, string> = {
   <script src="../scripts/align.ts"></script>
   <script src="../scripts/audio.ts"></script>
   <script src="../scripts/roles.ts"></script>
+  <script src="../scripts/keygloss.ts"></script>
 </Layout>
