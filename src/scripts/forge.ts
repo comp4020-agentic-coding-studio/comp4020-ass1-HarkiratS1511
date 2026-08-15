@@ -199,8 +199,15 @@ if (section && slotList && keySelect && playButton && drumButton && verdictBox) 
   }
 
   // --- Pointer drag (pointer events + capture, NOT HTML5 draggable) --------
+  // The chip FOLLOWS the pointer (an inline translate transform) but stays in
+  // its home slot in the DOM for the whole gesture — it is NOT re-seated into
+  // another slot mid-drag. Re-seating mid-drag was the bug: the chip's transform
+  // is measured from its DOM position, so appendChild-ing it elsewhere made it
+  // jump by the slot offset and fly away. Instead the target slot is only
+  // highlighted during the move, and the real reorder happens ONCE on drop.
   let dragging: HTMLButtonElement | null = null;
   let dragDegree: Degree | null = null;
+  let dropIndex = -1; // the slot index currently under the pointer
   let startX = 0;
   let startY = 0;
 
@@ -221,10 +228,18 @@ if (section && slotList && keySelect && playButton && drumButton && verdictBox) 
     return best;
   }
 
+  /** Mark one slot (or none, with -1) as the live drop target; clear the rest. */
+  function markDropTarget(index: number): void {
+    slots.forEach((slot, i) => {
+      slot.classList.toggle("forge__slot--drop-target", i === index);
+    });
+  }
+
   for (const [degree, chip] of chipByDegree) {
     chip.addEventListener("pointerdown", (event) => {
       dragging = chip;
       dragDegree = degree;
+      dropIndex = order.indexOf(degree);
       startX = event.clientX;
       startY = event.clientY;
       try {
@@ -233,31 +248,42 @@ if (section && slotList && keySelect && playButton && drumButton && verdictBox) 
         // Pointer id not capturable (e.g. a synthesized event) — the drag
         // still works; capture only keeps real pointers glued to the chip.
       }
+      // Raise stacking + lift visual; the chip stays in its slot for now.
       chip.classList.add("forge__chip--dragging");
     });
 
     chip.addEventListener("pointermove", (event) => {
       if (dragging !== chip || !dragDegree) return;
-      // Lift-and-follow visual (skipped under reduced-motion): the chip trails
-      // the pointer while the slots reorder beneath it.
+      // Follow-pointer visual on the DRAGGED CHIP ONLY (skipped under
+      // reduced-motion). The chip never leaves its home slot in the DOM, so the
+      // transform is always measured from the same origin — no jump.
       if (!reducedMotion.matches) {
         chip.style.transform = `translate(${event.clientX - startX}px, ${
           event.clientY - startY
         }px)`;
       }
-      const targetIndex = slotIndexAt(event.clientX, event.clientY);
-      if (order.indexOf(dragDegree) !== targetIndex) {
-        moveDegree(dragDegree, targetIndex);
-        render();
-        syncIfPlaying();
-        chip.classList.add("forge__chip--dragging"); // survive the re-seat
-      }
+      // Highlight the slot the pointer is over — but do NOT reorder yet.
+      dropIndex = slotIndexAt(event.clientX, event.clientY);
+      markDropTarget(dropIndex);
     });
 
-    function endDrag(event: PointerEvent): void {
+    function endDrag(event: PointerEvent, commit: boolean): void {
       if (dragging !== chip) return;
-      chip.classList.remove("forge__chip--dragging");
+      const degreeAtDrop = dragDegree;
+      const target = dropIndex;
+
+      // Commit the reorder ONCE, on drop, only if the slot actually changed.
+      if (commit && degreeAtDrop && order.indexOf(degreeAtDrop) !== target) {
+        moveDegree(degreeAtDrop, target);
+        render();
+        syncIfPlaying();
+      }
+
+      // Full visual cleanup: clear the inline transform, drop the dragging
+      // class + raised z-index, un-highlight every slot, release the capture.
       chip.style.transform = "";
+      chip.classList.remove("forge__chip--dragging");
+      markDropTarget(-1);
       try {
         chip.releasePointerCapture(event.pointerId);
       } catch {
@@ -265,11 +291,11 @@ if (section && slotList && keySelect && playButton && drumButton && verdictBox) 
       }
       dragging = null;
       dragDegree = null;
-      render();
+      dropIndex = -1;
     }
 
-    chip.addEventListener("pointerup", endDrag);
-    chip.addEventListener("pointercancel", endDrag);
+    chip.addEventListener("pointerup", (event) => endDrag(event, true));
+    chip.addEventListener("pointercancel", (event) => endDrag(event, false));
   }
 
   // --- Key selector --------------------------------------------------------

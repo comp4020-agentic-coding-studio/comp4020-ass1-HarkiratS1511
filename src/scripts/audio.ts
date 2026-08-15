@@ -44,6 +44,17 @@ const BASS_OCTAVE = 0.5; // ×0.5 = one octave down, for weight under the triad
 const MASTER_GAIN = 0.82; // shared output trim, lowered now that a bass note stacks
 const STOP_RAMP = 0.06; // gain ramp when stopping, seconds — kills clicks
 
+// The collision limiter (a DynamicsCompressorNode) inserted on the master output
+// only when more than one part sounds at once. With ÷√n normalization the summed
+// peaks of an aligned unison would push past unity; a fast brick-wall limiter
+// catches those transients so the fat unison stays audible without railing the
+// samples, while an unaligned incoherent sum passes through essentially untouched.
+const LIMIT_THRESHOLD = -4; // dB — just under the ceiling; only peaks are caught
+const LIMIT_KNEE = 6; // dB — a soft-ish knee so limiting doesn't pump audibly
+const LIMIT_RATIO = 16; // near brick-wall above the threshold
+const LIMIT_ATTACK = 0.003; // s — fast enough to catch strum transients
+const LIMIT_RELEASE = 0.12; // s — recovers quickly between beats
+
 // Optional metronome click (the songwriter's drum toggle). A tight square-wave
 // blip with a near-instant attack and a fast exponential decay reads as a woody
 // tick, not a tone. Kept deliberately quiet — a beat you feel under the chords,
@@ -156,6 +167,12 @@ interface Session {
   // opts in. Read live in pump() so it schedules a click per chord slot.
   drum: boolean;
   master: GainNode;
+  // A brick-wall limiter inserted on the master output ONLY when more than one
+  // part plays together ("all five at once"), so an unaligned incoherent sum can
+  // be normalized up (÷√n, not ÷n) without an aligned coherent unison clipping.
+  // null for a single song, whose path stays byte-for-byte master → destination.
+  // Held here so stop() disconnects it too and nothing lingers.
+  limiter: DynamicsCompressorNode | null;
   // The per-session warmth chain, held so stop() can disconnect every node and
   // leave nothing lingering: voices → filter → {dry, convolver→wet} → master.
   filter: BiquadFilterNode;
@@ -438,6 +455,7 @@ export function stop(): void {
   // warmth chain — so no node (or reverb tail) lingers past the fade.
   window.setTimeout(() => {
     active.master.disconnect();
+    active.limiter?.disconnect(); // the collision limiter, when one was inserted
     active.filter.disconnect();
     active.convolver.disconnect();
     active.dry.disconnect();
@@ -448,10 +466,12 @@ export function stop(): void {
 /**
  * Start looping `parts` — one or more four-chord progressions — off a single
  * shared clock, driven from `button`. One part is a single song; five parts is
- * "all five at once". The master trim is divided by the part count so five
- * aligned progressions (identical tones, summing coherently) stay under the
- * ceiling as a fat unison instead of clipping. `options.drum` opts this session
- * into a quiet metronome tick on each beat (the songwriter's drum toggle).
+ * "all five at once". The master trim is divided by √(part count) so an
+ * unaligned collision (incoherent ~√n sum) stays near a single song's loudness
+ * rather than muted, while a brick-wall limiter (inserted only for >1 part)
+ * keeps an aligned unison (coherent ~n sum) under the ceiling instead of
+ * clipping. `options.drum` opts this session into a quiet metronome tick on each
+ * beat (the songwriter's drum toggle).
  */
 export function start(
   button: HTMLButtonElement,
@@ -462,13 +482,32 @@ export function start(
 
   const context = getAudioContext();
   const master = context.createGain();
-  master.gain.value = MASTER_GAIN / parts.length;
-  master.connect(context.destination);
-  // Additionally tap this session's master into the shared analyser, in
-  // parallel with the destination connection above. The analyser only observes
-  // (it connects onward to nothing); stop() disconnects master entirely, so a
-  // stopped session no longer drives the visualizer.
-  master.connect(getAnalyser(context));
+  // Normalize by √n, not n: aligned parts sum coherently (~n×) but unaligned
+  // parts sum incoherently (~√n×), so ÷√n keeps the unaligned collision near a
+  // single song's loudness instead of ÷n's muted 1/√n. n=1 is ÷1 — unchanged.
+  master.gain.value = MASTER_GAIN / Math.sqrt(parts.length);
+
+  // Single song (1 part): master → destination, plus the analyser tap — exactly
+  // as before, byte-for-byte. Collision (>1 part): master → limiter → destination
+  // so the louder ÷√n sum can't clip, with the analyser observing the FINAL
+  // (post-limiter) signal. The analyser only observes (connects onward to
+  // nothing); stop() disconnects master AND the limiter, so a stopped session no
+  // longer drives the visualizer or lingers in the graph.
+  let limiter: DynamicsCompressorNode | null = null;
+  if (parts.length > 1) {
+    limiter = context.createDynamicsCompressor();
+    limiter.threshold.value = LIMIT_THRESHOLD;
+    limiter.knee.value = LIMIT_KNEE;
+    limiter.ratio.value = LIMIT_RATIO;
+    limiter.attack.value = LIMIT_ATTACK;
+    limiter.release.value = LIMIT_RELEASE;
+    master.connect(limiter);
+    limiter.connect(context.destination);
+    limiter.connect(getAnalyser(context));
+  } else {
+    master.connect(context.destination);
+    master.connect(getAnalyser(context));
+  }
 
   // Build the warmth chain per session (mirroring how `master` is owned per
   // session) so stopping this session disconnects it and fully silences it.
@@ -497,6 +536,7 @@ export function start(
     parts,
     drum: options.drum ?? false,
     master,
+    limiter,
     filter,
     convolver,
     dry,

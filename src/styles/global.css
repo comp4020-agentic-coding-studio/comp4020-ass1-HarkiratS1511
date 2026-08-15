@@ -1520,6 +1520,17 @@ body {
   background-color: var(--paper-dim);
 }
 
+/* The live drop target during a pointer drag: a bold dashed outline that shows
+   where the dragged chip will land on release. Cleared from every slot on drop
+   or cancel (see forge.ts markDropTarget). */
+.forge__slot--drop-target {
+  border-color: var(--ink);
+  border-style: dashed;
+  outline: 2px dashed var(--focus);
+  outline-offset: 2px;
+  background-color: var(--paper);
+}
+
 .forge__slotno {
   position: absolute;
   top: 0.35rem;
@@ -1559,9 +1570,14 @@ body {
   outline-offset: 2px;
 }
 
+/* While a chip follows the pointer it must ride ABOVE its sibling slots and not
+   be cropped by any slot clip. position:relative makes z-index take effect (the
+   slots share one stacking context), lifting the dragged chip over everything.
+   The inline translate transform set in forge.ts overrides the scale here. */
 .forge__chip--dragging {
+  position: relative;
   cursor: grabbing;
-  z-index: 8;
+  z-index: 30;
   box-shadow: 0 8px 20px rgb(32 30 29 / 30%);
   transform: scale(1.06);
 }
