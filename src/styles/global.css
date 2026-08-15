@@ -1231,7 +1231,14 @@ body {
   justify-content: space-between;
   gap: 0.75rem 1.75rem;
   width: 100%;
-  padding: 0.85rem clamp(1rem, 4vw, 2rem) 1rem;
+
+  /* Keep the bar full-bleed (background + rule span the viewport) but pull the
+     copy and controls in to the same --spine column the page above uses, so on
+     a wide screen they don't sit hard-left and hard-right with a dead void
+     between them. The clamp is the floor at narrow widths; the spine gutter
+     takes over once the viewport is wider than the spine. */
+  padding-block: 0.85rem 1rem;
+  padding-inline: max(clamp(1rem, 4vw, 2rem), calc((100% - var(--spine)) / 2));
   background-color: var(--paper);
   color: var(--ink);
   border-top: 4px solid var(--ink);
@@ -1413,15 +1420,31 @@ body {
 .chorus {
   display: inline-flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.25rem;
   align-items: flex-start;
   min-width: 0;
 }
 
-.chorus__hint {
+/* Kicker over the button, in the same uppercase letterspaced "data label"
+   treatment as the press-room labels, so the control announces itself as a
+   deliberate "hear the A/B" cluster rather than a lone button. */
+.chorus__label {
+  font-family: var(--font-body);
   font-size: 0.62rem;
-  font-style: italic;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
   color: var(--ink-faint);
+}
+
+/* The split/aligned caption, bumped up from a whisper so the A/B is actually
+   readable — still subordinate to the button above it. */
+.chorus__hint {
+  max-width: 20ch;
+  font-size: 0.72rem;
+  font-style: italic;
+  line-height: 1.3;
+  color: var(--ink-soft);
 }
 
 /* A distinct third affordance: paper base with a printed gold underscore so it
@@ -1774,6 +1797,49 @@ body {
     right: 0;
     width: auto;
     max-width: none;
+  }
+
+  /* Once the press-room controls wrap, keep the two conceptual groups apart:
+     the shared-key picker takes its own row, Align + Split pair on the next,
+     and the "hear all five" collision cluster (label + button + caption) drops
+     to a clean full-width block of its own instead of orphaning Split beside
+     its three-line caption. */
+  .reveal__controls .keypicker,
+  .reveal__controls .chorus {
+    flex-basis: 100%;
+  }
+}
+
+/* On the narrowest phones the four forge chips sit in ~80px columns and the ≡
+   handle, chord letter and roman numeral pack together. Stay a single
+   left-to-right row (it reads as a progression) but reclaim width by trimming
+   the slot/chip side padding, and give the stacked pieces comfortable vertical
+   breathing room: the chord letter stays the loud element, the handle and
+   numeral step back so nothing collides. The chip stays a >=44px drag target. */
+@media (width <= 27rem) {
+  .forge__slots {
+    gap: 0.4rem;
+  }
+
+  .forge__slot {
+    padding: 1.2rem 0.15rem 0.4rem;
+  }
+
+  .forge__chip {
+    gap: 0.35rem;
+    padding: 0.7rem 0.15rem 0.6rem;
+  }
+
+  .forge__handle {
+    font-size: 0.8rem;
+  }
+
+  .forge__chip-letter {
+    font-size: 1.3rem;
+  }
+
+  .forge__chip-degree {
+    font-size: 0.68rem;
   }
 }
 
