@@ -964,7 +964,8 @@ body {
   transition:
     transform 0.14s ease,
     background-color 0.14s ease,
-    box-shadow 0.14s ease;
+    box-shadow 0.14s ease,
+    opacity 0.14s ease;
 }
 
 .chord__btn {
@@ -1051,6 +1052,49 @@ body {
   font-weight: 600;
   letter-spacing: 0.1em;
   color: var(--plate-text);
+  transition: opacity 0.14s ease;
+}
+
+/* --- Cross-song degree lighting (roles.ts) --------------------------------
+   The thesis, made interactive: hovering, keyboard-focusing, or tap-pinning
+   any one chord sets [data-lit-degree] on the whole stage. That one
+   attribute is the only thing JS decides; everything below is CSS fanning
+   it out to the matching cell in *every* song's row at once, so touching
+   one "V" visibly lights up the V in all five songs — the same slot
+   recurring everywhere, not just a single chord's role text. Each rule pair
+   below reuses that degree's existing --plate token (set by [data-degree]
+   near the top of this file); no new colours are introduced. */
+
+/* Once any degree is lit, every chord recedes slightly first, so the four
+   (of twenty) matching cells read as the ones that popped forward. */
+.stage[data-lit-degree] .chord {
+  opacity: 0.5;
+}
+
+.stage[data-lit-degree="I"] .chord[data-degree="I"],
+.stage[data-lit-degree="V"] .chord[data-degree="V"],
+.stage[data-lit-degree="vi"] .chord[data-degree="vi"],
+.stage[data-lit-degree="IV"] .chord[data-degree="IV"] {
+  opacity: 1;
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 -4px 0 rgb(0 0 0 / 40%),
+    inset 0 1px 0 rgb(255 255 255 / 14%),
+    0 0 0 2px var(--plate),
+    0 3px 8px rgb(32 30 29 / 25%);
+}
+
+/* Secondary, quieter echo in the roman row: same numeral, same moment. */
+.stage[data-lit-degree] .roman {
+  opacity: 0.55;
+}
+
+.stage[data-lit-degree="I"] .roman[data-degree="I"],
+.stage[data-lit-degree="V"] .roman[data-degree="V"],
+.stage[data-lit-degree="vi"] .roman[data-degree="vi"],
+.stage[data-lit-degree="IV"] .roman[data-degree="IV"] {
+  opacity: 1;
+  font-weight: 800;
 }
 
 /* Chord-role popover — anchored to the .chords row, spans it and wraps. */
@@ -1361,7 +1405,8 @@ body {
     transition-duration: 0.01ms !important;
   }
 
-  .chord--playing {
+  .chord--playing,
+  .stage[data-lit-degree] .chord {
     transform: none;
   }
 
