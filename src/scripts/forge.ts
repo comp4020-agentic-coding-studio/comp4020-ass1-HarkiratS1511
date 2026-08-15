@@ -18,71 +18,14 @@
 export {};
 
 import { chordsForTonic, type Degree } from "../lib/chords";
+import { verdictFor } from "../lib/families";
 import { playingButton, start, stop } from "./audio";
 
-// --- The recognition table -------------------------------------------------
-// Keyed on the ORDERED four degrees the visitor arranged. Song lists are kept
-// short and musically bulletproof; the fourth case (any other permutation) is
-// deliberate — it proves order is load-bearing, and it still plays.
-interface Verdict {
-  name: string;
-  body: string;
-  songs: string;
-}
-
-// The five exhibit keys → the exhibit that lives in that key, for the Axis case.
-const AXIS_BY_KEY: Record<string, string> = {
-  B: "“I’m Yours” (Jason Mraz)",
-  F: "“Where Is the Love?” (Black Eyed Peas)",
-  A: "“Someone Like You” (Adele)",
-  D: "“With or Without You” (U2)",
-  Eb: "“She Will Be Loved” (Maroon 5)",
-};
-
-const AXIS_ORDER = "I,V,vi,IV";
-const ROCK_ORDER = "vi,IV,I,V";
-const DOOWOP_ORDER = "I,vi,IV,V";
-
-/** The themed verdict for an arrangement (ordered degrees) in a chosen key. */
-function verdictFor(order: Degree[], key: string): Verdict {
-  const sequence = order.join(",");
-
-  if (sequence === AXIS_ORDER) {
-    const exhibit = AXIS_BY_KEY[key];
-    return {
-      name: "The Axis",
-      body:
-        "The most-used order in pop — the one this whole newspaper is about. I → V → vi → IV.",
-      songs: exhibit
-        ? `In the key of ${key}, that’s the exact progression under ${exhibit}. Same four moves, all over again.`
-        : `In ${key} it’s a hit nobody’s written yet — same four moves, new paint. Also the family of “Let It Be” and “Don’t Stop Believin’.”`,
-    };
-  }
-
-  if (sequence === ROCK_ORDER) {
-    return {
-      name: "The Rock Axis",
-      body:
-        "Start on the sad chord and the same four turn to granite. vi → IV → I → V.",
-      songs: "You just built “Zombie” (The Cranberries) and “Save Tonight” (Eagle-Eye Cherry).",
-    };
-  }
-
-  if (sequence === DOOWOP_ORDER) {
-    return {
-      name: "The ’50s / Doo-Wop",
-      body:
-        "Slow-dance the six-chord in second and it’s 1958 again. I → vi → IV → V.",
-      songs: "You just built “Stand By Me,” “Blue Moon,” and “Earth Angel.”",
-    };
-  }
-
-  return {
-    name: "Uncharted",
-    body: "Same four chords — but that order never caught on. Hear it wander?",
-    songs: "No famous hit lives here. Which is the whole point: the order is doing the work, not the chords.",
-  };
-}
+// The recognition logic lives in ../lib/families.ts — a pure, DOM-free module
+// so it can be unit-tested directly. The four chords form a LOOP that has no
+// fixed start, so the 24 orderings collapse into six cyclic-rotation families;
+// verdictFor names the family and reports which rotation (and its songs) the
+// visitor built. This module only wires that verdict into the three DOM fields.
 
 // --- Elements --------------------------------------------------------------
 
