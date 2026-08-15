@@ -246,6 +246,20 @@ main > section {
   color: var(--paper);
 }
 
+/* --- Live audio visualizer (decorative) ----------------------------------
+   A slim canvas under the hero actions. width:100% keeps it responsive and
+   never introduces a fixed pixel width that could overflow the 390px phone
+   viewport; the height is fixed in CSS and the script sizes the backing store
+   to devicePixelRatio for a crisp line. It rests on a faint baseline until a
+   progression plays. */
+
+.visualizer {
+  display: block;
+  width: 100%;
+  height: 72px;
+  margin-top: 1.75rem;
+}
+
 /* --- The counter chip ----------------------------------------------------- */
 
 .counter {

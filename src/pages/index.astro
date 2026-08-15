@@ -60,6 +60,15 @@ const ROMANS = ["I", "V", "vi", "IV"] as const;
           ><span aria-hidden="true">·</span><span>1 move</span>
         </p>
       </div>
+      <!-- Decorative live audio visualizer: a calm waveform / beat pulse that
+           reacts to whatever is playing. Purely presentational (aria-hidden);
+           audio.ts drives it off a shared analyser tap. -->
+      <canvas
+        class="visualizer"
+        data-visualizer
+        aria-hidden="true"
+        width="600"
+        height="72"></canvas>
     </section>
 
     <!-- Scene 2 + 3 — the lineup, with the align toolbar docked over it -->

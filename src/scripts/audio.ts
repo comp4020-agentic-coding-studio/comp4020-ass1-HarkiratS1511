@@ -64,6 +64,28 @@ function getAudioContext(): AudioContext {
   return audioContext;
 }
 
+// One shared AnalyserNode taps whatever is currently playing (each session's
+// `master` connects here in parallel — see start()). It is a pure *observer*:
+// it reads the summed signal and connects onward to nothing, so it adds no
+// audio path and — crucially — no oscillator and no frequency. The
+// thesis-in-sound invariant (two aligned songs → an identical set of oscillator
+// frequencies) is therefore untouched by the visualizer.
+const VIS_FFT = 1024; // small window: cheap, plenty of detail for a calm wave
+
+let analyser: AnalyserNode | null = null;
+let visData: Uint8Array<ArrayBuffer> | null = null;
+
+/** The shared AnalyserNode, created lazily alongside the AudioContext. */
+function getAnalyser(context: AudioContext): AnalyserNode {
+  if (analyser) return analyser;
+  const node = context.createAnalyser();
+  node.fftSize = VIS_FFT;
+  node.smoothingTimeConstant = 0.8; // gentle, un-jittery swell — no flicker
+  analyser = node;
+  visData = new Uint8Array(node.fftSize);
+  return node;
+}
+
 // The reverb's impulse response: an exponentially-decaying burst of noise,
 // synthesised in code (there is no network/asset to fetch). Convolving the dry
 // signal with this is what produces the "room" tail. Randomness lives ONLY here
@@ -262,6 +284,7 @@ function stop(): void {
   window.clearInterval(active.timer);
   window.cancelAnimationFrame(active.raf);
   clearHighlight(active); // the highlight must never linger past stop
+  stopVisualizer(); // no lingering visual once sound stops; loop idles cheaply
   setButtonPlaying(active.button, false);
 
   const context = getAudioContext();
@@ -299,6 +322,11 @@ function start(button: HTMLButtonElement, labels: string[]): void {
   const master = context.createGain();
   master.gain.value = MASTER_GAIN;
   master.connect(context.destination);
+  // Additionally tap this session's master into the shared analyser, in
+  // parallel with the destination connection above. The analyser only observes
+  // (it connects onward to nothing); stop() disconnects master entirely, so a
+  // stopped session no longer drives the visualizer.
+  master.connect(getAnalyser(context));
 
   // Build the warmth chain per session (mirroring how `master` is owned per
   // session) so stopping this session disconnects it and fully silences it.
@@ -342,9 +370,187 @@ function start(button: HTMLButtonElement, labels: string[]): void {
   session = active;
 
   setButtonPlaying(button, true);
+  startVisualizer(); // the decorative canvas only animates while something plays
   pump(active); // queue the first chords immediately, then keep topping up
   active.timer = window.setInterval(() => pump(active), TICK_MS);
   active.raf = window.requestAnimationFrame(() => followPlayhead(active));
+}
+
+// --- Live visualizer (a decorative analyser tap) ---------------------------
+// A small canvas that draws the live master signal as a calm waveform with a
+// beat pulse that swells on each chord's attack. It is purely decorative
+// (aria-hidden). Its rAF loop is deliberately SEPARATE from followPlayhead so
+// it can never perturb the .chord--playing highlight timing; it also idles for
+// free (no rAF scheduled) whenever nothing is playing.
+
+const canvas = document.querySelector<HTMLCanvasElement>("[data-visualizer]");
+const canvasCtx = canvas?.getContext("2d") ?? null;
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+let visRaf = 0;
+
+// The warm palette is read once from the CSS custom properties so the canvas
+// matches the page's degree hues and paper aesthetic without duplicating them.
+let degColors: string[] = [];
+let inkFaint = "#8a867b";
+
+function cacheColors(): void {
+  const styles = getComputedStyle(document.documentElement);
+  degColors = DEGREES.map(
+    (degree) =>
+      styles.getPropertyValue(`--deg-${degree.toLowerCase()}`).trim() ||
+      inkFaint,
+  );
+  inkFaint = styles.getPropertyValue("--ink-faint").trim() || inkFaint;
+}
+
+// Size the backing store to the CSS box × devicePixelRatio so the line stays
+// crisp on high-DPI screens; the CSS width is 100% of the container, so there
+// is no fixed pixel width to overflow the 390px viewport.
+function sizeCanvas(): void {
+  if (!canvas || !canvasCtx) return;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.max(1, Math.round(canvas.clientWidth * dpr));
+  canvas.height = Math.max(1, Math.round(canvas.clientHeight * dpr));
+  canvasCtx.setTransform(dpr, 0, 0, dpr, 0, 0); // draw in CSS pixels
+}
+
+/** The current chord's degree hue, or a faint neutral when nothing is lit. */
+function litColor(): string {
+  const index = session?.litIndex ?? -1;
+  return index >= 0 && degColors[index] ? degColors[index] : inkFaint;
+}
+
+/** Idle: a flat, faint baseline — quiet, never noisy, when nothing plays. */
+function drawIdle(): void {
+  if (!canvas || !canvasCtx) return;
+  const width = canvas.clientWidth;
+  const height = canvas.clientHeight;
+  canvasCtx.clearRect(0, 0, width, height);
+  canvasCtx.globalAlpha = 0.35;
+  canvasCtx.strokeStyle = inkFaint;
+  canvasCtx.lineWidth = 2;
+  canvasCtx.beginPath();
+  canvasCtx.moveTo(0, height / 2);
+  canvasCtx.lineTo(width, height / 2);
+  canvasCtx.stroke();
+  canvasCtx.globalAlpha = 1;
+}
+
+/** Reduced motion: one static, representative waveform frame — no animation. */
+function drawStaticFrame(): void {
+  if (!canvas || !canvasCtx) return;
+  const width = canvas.clientWidth;
+  const height = canvas.clientHeight;
+  const mid = height / 2;
+  canvasCtx.clearRect(0, 0, width, height);
+  canvasCtx.globalAlpha = 0.5;
+  canvasCtx.strokeStyle = inkFaint;
+  canvasCtx.lineWidth = 2;
+  canvasCtx.beginPath();
+  for (let x = 0; x <= width; x += 1) {
+    const y = mid - Math.sin((x / width) * Math.PI * 4) * mid * 0.3;
+    if (x === 0) canvasCtx.moveTo(x, y);
+    else canvasCtx.lineTo(x, y);
+  }
+  canvasCtx.stroke();
+  canvasCtx.globalAlpha = 1;
+}
+
+/** One live frame: a soft degree-hued pulse band + the sampled waveform. */
+function drawFrame(): void {
+  if (!canvas || !canvasCtx || !analyser || !visData) return;
+  const width = canvas.clientWidth;
+  const height = canvas.clientHeight;
+  const mid = height / 2;
+
+  analyser.getByteTimeDomainData(visData);
+
+  // RMS of the time-domain signal → the beat pulse swell on each attack.
+  let sumSquares = 0;
+  for (let i = 0; i < visData.length; i += 1) {
+    const sample = (visData[i] - 128) / 128;
+    sumSquares += sample * sample;
+  }
+  const rms = Math.sqrt(sumSquares / visData.length);
+  const swell = Math.min(1, rms * 4);
+  const color = litColor();
+
+  canvasCtx.clearRect(0, 0, width, height);
+
+  // A soft filled band behind the wave, in the sounding chord's hue, that
+  // breathes with the amplitude — the "beat pulse", kept low-contrast.
+  const band = mid * (0.2 + swell * 0.9);
+  canvasCtx.globalAlpha = 0.1 + swell * 0.22;
+  canvasCtx.fillStyle = color;
+  canvasCtx.fillRect(0, mid - band, width, band * 2);
+
+  // The waveform itself, drawn as a single smooth line in the same hue.
+  canvasCtx.globalAlpha = 0.9;
+  canvasCtx.strokeStyle = color;
+  canvasCtx.lineWidth = 2;
+  canvasCtx.lineJoin = "round";
+  canvasCtx.beginPath();
+  const step = width / visData.length;
+  for (let i = 0; i < visData.length; i += 1) {
+    const sample = (visData[i] - 128) / 128;
+    const x = i * step;
+    const y = mid + sample * mid * 0.9;
+    if (i === 0) canvasCtx.moveTo(x, y);
+    else canvasCtx.lineTo(x, y);
+  }
+  canvasCtx.stroke();
+  canvasCtx.globalAlpha = 1;
+}
+
+/** The visualizer rAF loop: runs only while a session is playing. */
+function visualizerLoop(): void {
+  if (!session) {
+    visRaf = 0; // stopped — let the loop die and rest on a quiet baseline
+    drawIdle();
+    return;
+  }
+  drawFrame();
+  visRaf = window.requestAnimationFrame(visualizerLoop);
+}
+
+/** Start the draw loop when playback starts (or freeze under reduced motion). */
+function startVisualizer(): void {
+  if (!canvas || !canvasCtx) return;
+  sizeCanvas();
+  if (reducedMotion.matches) {
+    drawStaticFrame(); // honour the preference: a still frame, no busy loop
+    return;
+  }
+  if (visRaf) return; // already looping
+  visRaf = window.requestAnimationFrame(visualizerLoop);
+}
+
+/** Stop the draw loop and rest the canvas quietly when playback stops. */
+function stopVisualizer(): void {
+  if (visRaf) {
+    window.cancelAnimationFrame(visRaf);
+    visRaf = 0;
+  }
+  drawIdle();
+}
+
+// Keep the backing store in step with the layout, and redraw the resting state
+// when idle so a resize never leaves a stale or stretched frame on screen.
+window.addEventListener("resize", () => {
+  sizeCanvas();
+  if (!session) {
+    if (reducedMotion.matches) drawStaticFrame();
+    else drawIdle();
+  }
+});
+
+// Initial paint: measure, cache the palette, and rest quietly until first play.
+if (canvas && canvasCtx) {
+  cacheColors();
+  sizeCanvas();
+  if (reducedMotion.matches) drawStaticFrame();
+  else drawIdle();
 }
 
 // --- Wiring ----------------------------------------------------------------
