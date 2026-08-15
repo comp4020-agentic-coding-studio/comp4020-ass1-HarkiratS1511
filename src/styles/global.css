@@ -380,20 +380,38 @@ body {
   gap: 1rem 1.5rem;
 }
 
-/* Press photo — faux misregistered CMYK process plates. */
+/* Press photo — a real photo printed as a misregistered CMYK duotone. */
 .pressphoto {
   position: relative;
   aspect-ratio: 4 / 3;
   border: 1px solid var(--ink);
   background-color: var(--paper-dim);
-  background-image:
-    radial-gradient(circle at 38% 42%, rgb(0 136 176 / 55%) 0 22%, transparent 46%),
-    radial-gradient(circle at 44% 40%, rgb(214 0 108 / 45%) 0 20%, transparent 44%),
-    radial-gradient(circle at 41% 45%, rgb(232 180 0 / 55%) 0 24%, transparent 48%),
-    radial-gradient(circle at 60% 70%, rgb(32 30 29 / 65%) 0 30%, transparent 60%);
   overflow: hidden;
 }
 
+.pressphoto img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+
+  /* knock the photo back to grey so the process-plate tint reads as ink */
+  filter: grayscale(1) contrast(1.06) brightness(1.02);
+}
+
+/* the misregistered cyan/magenta plates, laid over the greyed photo */
+.pressphoto::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(120deg, rgb(0 136 176 / 40%), transparent 55%),
+    linear-gradient(300deg, rgb(214 0 108 / 34%), transparent 55%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+/* the halftone dot screen over the whole plate */
 .pressphoto::after {
   content: "";
   position: absolute;
@@ -401,6 +419,7 @@ body {
   background-image: radial-gradient(rgb(32 30 29 / 22%) 1px, transparent 1.4px);
   background-size: 5px 5px;
   mix-blend-mode: multiply;
+  pointer-events: none;
 }
 
 .pressphoto__caption {
@@ -799,28 +818,36 @@ body {
   text-align: center;
 }
 
-/* Cover slot — decorative newsprint halftone, no <img>. */
+/* Cover slot — the real album cover, printed with a light newsprint screen. */
 .song__cover {
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
+  position: relative;
   aspect-ratio: 1;
   width: 100%;
   max-width: 6rem;
-  padding: 0.35rem;
-  border: 1px solid var(--rule-light);
+  overflow: hidden;
+  border: 1px solid var(--ink);
   background-color: var(--paper-dim);
-  background-image: radial-gradient(var(--ink-faint) 1.1px, transparent 1.4px);
-  background-size: 6px 6px;
 }
 
-.song__cover span {
-  font-size: 0.62rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
-  background-color: var(--paper);
-  padding: 0.05rem 0.3rem;
+.song__cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+
+  /* keep the art clearly recognisable — only a faint printed warmth */
+  filter: contrast(1.04) saturate(0.92) sepia(0.05);
+}
+
+/* a faint halftone screen so the cover reads as "printed in the paper" */
+.song__cover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgb(32 30 29 / 12%) 1px, transparent 1.4px);
+  background-size: 6px 6px;
+  mix-blend-mode: multiply;
+  pointer-events: none;
 }
 
 .song__meta {
@@ -1297,6 +1324,25 @@ body {
     display: block;
     width: fit-content;
     margin-top: 1.25rem;
+  }
+
+  /* On a phone the ⓘ sits far enough into the meta column that a fixed-width
+     popover anchored to it runs off the right edge. Re-anchor the tooltip to
+     the key line so it spans the meta column and can never overflow the
+     viewport — the vertical drop (top: 100%) still lands it under the key. */
+  .song__key {
+    position: relative;
+  }
+
+  .keygloss {
+    position: static;
+  }
+
+  .keygloss__tip {
+    left: 0;
+    right: 0;
+    width: auto;
+    max-width: none;
   }
 }
 

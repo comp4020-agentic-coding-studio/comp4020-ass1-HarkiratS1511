@@ -3,6 +3,18 @@ import Layout from "../layouts/Layout.astro";
 import { SONGS } from "../data/songs";
 import { ALIGN_KEY, chordsForTonic, type Degree } from "../lib/chords";
 
+// Real cover art (one per exhibit A–E) + the front-page press photo. Imported
+// as ESM assets so Vite hashes them under the deploy base path — a hard-coded
+// path would 404 on …github.io/<repo>/. Order matches SONGS (index 0 → A).
+import coverA from "../images/cover-a-im-yours.jpg";
+import coverB from "../images/cover-b-where-is-the-love.jpg";
+import coverC from "../images/cover-c-someone-like-you.jpg";
+import coverD from "../images/cover-d-with-or-without-you.jpg";
+import coverE from "../images/cover-e-she-will-be-loved.jpg";
+import heroPress from "../images/hero-press.jpg";
+
+const COVERS = [coverA, coverB, coverC, coverD, coverE];
+
 // The keys the visitor can transpose every song to. Conventional lead-sheet
 // spellings (mixed sharps/flats) so the shared-key readout matches how a
 // musician would write it — the same order chords.ts uses internally.
@@ -127,7 +139,18 @@ const EXHIBIT = (index: number) => String.fromCharCode(65 + index);
         </div>
 
         <div class="frontgrid__photo">
-          <div class="pressphoto" aria-hidden="true"></div>
+          <div class="pressphoto">
+            {/* Decorative front-page furniture, so alt="" (removed from the a11y
+                tree). Printed as a misregistered CMYK duotone via CSS. */}
+            <img
+              src={heroPress.src}
+              width={heroPress.width}
+              height={heroPress.height}
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
           <p class="pressphoto__caption">
             One spotlight, one crowd, one progression &mdash; printed with the
             plates showing.
@@ -319,8 +342,15 @@ const EXHIBIT = (index: number) => String.fromCharCode(65 + index);
                   data-tonic={song.tonic}
                   data-current-key={song.tonic}
                 >
-                  <div class="song__cover" aria-hidden="true">
-                    <span>cover</span>
+                  <div class="song__cover">
+                    <img
+                      src={COVERS[songIndex].src}
+                      width={COVERS[songIndex].width}
+                      height={COVERS[songIndex].height}
+                      alt={`${song.title} — ${song.artist} album cover`}
+                      loading="lazy"
+                      decoding="async"
+                    />
                   </div>
 
                   <div class="song__meta">
