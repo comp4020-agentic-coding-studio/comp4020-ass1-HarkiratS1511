@@ -34,12 +34,18 @@ const ROLE_COPY: Record<Degree, string> = {
   vi: "The turn. The wistful, minor-key step.",
   IV: "The lift. It opens the song back up.",
 };
+
+// Exhibit letters A–E map from song index 0→A … 4→E.
+const EXHIBIT = (index: number) => String.fromCharCode(65 + index);
 ---
 
 <Layout title="Every pop song is the same four chords">
   <header class="masthead">
     <nav class="sitenav" aria-label="Sections">
       <a class="sitenav__skip" href="#lineup">Skip to the songs</a>
+      <a class="sitenav__mark" href="#hook" aria-label="The Four-Chord Tribune"
+        >T</a
+      >
       <ul class="sitenav__list">
         <li><a href="#hook">The claim</a></li>
         <li><a href="#lineup">The lineup</a></li>
@@ -50,36 +56,110 @@ const ROLE_COPY: Record<Degree, string> = {
   </header>
 
   <main>
-    <!-- Scene 1 — the hook -->
-    <section class="hook" id="hook">
-      <p class="kicker">One progression · Five songs</p>
-      <h1 class="hook__headline">Every pop song is the same four chords.</h1>
-      <p class="hook__support">Here&rsquo;s the proof &mdash; you can hear it.</p>
-      <div class="hook__actions">
-        <button
-          class="playbtn playbtn--hero"
-          type="button"
-          data-play="hero"
-          aria-label="Play the four-chord progression"
-        >
-          <span class="playbtn__glyph" aria-hidden="true">&#9654;</span>
-          <span>Play the four chords</span>
-        </button>
-        <p class="counter" aria-label="Five songs, four chords, one move">
-          <span>5 songs</span><span aria-hidden="true">·</span><span
-            >4 chords</span
-          ><span aria-hidden="true">·</span><span>1 move</span>
+    <!-- Scene 1 — the front page / the hook -->
+    <section class="frontpage" id="hook">
+      <p class="edition">
+        <span>Vol.&nbsp;IV &mdash; No.&nbsp;vi</span>
+        <span>Canberra &middot; Friday 15 August 2026 &middot; Weather: key of C, clear</span>
+        <span>Price: one chorus</span>
+      </p>
+
+      <p class="nameplate" aria-label="The Four-Chord Tribune">
+        The Four-Chord Tribune
+      </p>
+      <p class="motto">
+        All the chords that are fit to print &middot; Music desk special
+        investigation
+      </p>
+
+      <hr class="rule rule--thickthin" aria-hidden="true" />
+
+      <div class="headline">
+        <h1 class="headline__claim">Every pop song is the same four chords.</h1>
+        <p class="stamp stamp--extra" aria-hidden="true">
+          Extra! &middot; Hear it yourself
         </p>
       </div>
-      <!-- Decorative live audio visualizer: a calm waveform / beat pulse that
-           reacts to whatever is playing. Purely presentational (aria-hidden);
-           audio.ts drives it off a shared analyser tap. -->
-      <canvas
-        class="visualizer"
-        data-visualizer
-        aria-hidden="true"
-        width="600"
-        height="72"></canvas>
+
+      <p class="subdeck">
+        Five chart-toppers caught using one identical move &mdash; and the
+        evidence is audible. Our correspondents press the button so you
+        don&rsquo;t have to.
+      </p>
+
+      <div class="platestrip" aria-hidden="true">
+        <span data-degree="I"></span>
+        <span data-degree="V"></span>
+        <span data-degree="vi"></span>
+        <span data-degree="IV"></span>
+      </div>
+
+      <div class="frontgrid">
+        <div class="frontgrid__lede">
+          <p class="lede lede--lead">
+            By our music desk. It has long been whispered in green rooms and
+            karaoke bars; today this newspaper can confirm it. Jason Mraz, the
+            Black Eyed Peas, Adele, U2 and Maroon 5 &mdash; five acts, five
+            keys, no shared rehearsal space &mdash; are all playing
+            <em>the same four chords in the same order</em>.
+          </p>
+          <p class="lede">
+            The scheme goes by the alias <strong>I V vi IV</strong>. Readers
+            unfamiliar with the notation will find a primer below the fold.
+            Readers in a hurry may simply press the button and listen.
+          </p>
+          <div class="hook__actions">
+            <button
+              class="playbtn playbtn--hero"
+              type="button"
+              data-play="hero"
+              aria-label="Play the four-chord progression"
+            >
+              <span class="playbtn__glyph" aria-hidden="true">&#9654;</span>
+              <span>Play the four chords</span>
+            </button>
+            <p class="counter" aria-label="Five songs, four chords, one move">
+              <span>5 songs</span><span aria-hidden="true">&middot;</span><span
+                >4 chords</span
+              ><span aria-hidden="true">&middot;</span><span>1 move</span>
+            </p>
+          </div>
+        </div>
+
+        <div class="frontgrid__photo">
+          <div class="pressphoto" aria-hidden="true"></div>
+          <p class="pressphoto__caption">
+            One spotlight, one crowd, one progression &mdash; printed with the
+            plates showing.
+          </p>
+        </div>
+
+        <div class="frontgrid__wire">
+          <p class="wire__label">Fig. 1 &middot; the live signal</p>
+          <!-- Decorative live audio visualizer ("the wire"): reacts to whatever
+               is playing. Purely presentational (aria-hidden); audio.ts drives
+               it off a shared analyser tap. -->
+          <canvas
+            class="visualizer"
+            data-visualizer
+            aria-hidden="true"
+            width="600"
+            height="72"></canvas>
+          <p class="wire__caption">
+            Fig. 1 &mdash; the four chords as they cross the newsroom wire.
+            Colour indicates which of the four slots is sounding.
+          </p>
+
+          <nav class="onthispage" aria-label="On this page">
+            <p class="onthispage__head">On this page</p>
+            <ul>
+              <li><a href="#primer">A primer for new readers</a></li>
+              <li><a href="#lineup">The evidence</a></li>
+              <li><a href="#verdict">The verdict</a></li>
+            </ul>
+          </nav>
+        </div>
+      </div>
     </section>
 
     <!-- Scene 1.5 — the primer: everything a zero-music-knowledge visitor needs
@@ -88,10 +168,10 @@ const ROLE_COPY: Record<Degree, string> = {
     <section class="primer" id="primer">
       <details class="primer__box" open>
         <summary class="primer__summary">
-          <span class="primer__summary-text">New here? Start with this</span>
-          <span class="primer__summary-note" aria-hidden="true"
-            >a 60-second crash course</span
-          >
+          <h2 class="primer__head">For New Readers</h2>
+          <span class="primer__note">
+            a sixty-second primer, no instrument required
+          </span>
         </summary>
 
         <div class="primer__body">
@@ -140,10 +220,10 @@ const ROLE_COPY: Record<Degree, string> = {
 
           <figure class="primer__example">
             <figcaption class="primer__example-title">
-              The pattern, worked out
+              Table 1 &middot; the pattern, worked out
             </figcaption>
             {/* Two keys, same four slots. Each chord chip carries its degree via
-                data-degree so it inherits the same hue used across the lineup —
+                data-degree so it inherits the same plate used across the lineup —
                 colour quietly says "same slot" before a word is read. The slot
                 numerals are identical in both rows; only the letters differ. */}
             <div class="worked">
@@ -153,20 +233,20 @@ const ROLE_COPY: Record<Degree, string> = {
                 </p>
                 <div class="worked__chords">
                   <span class="worked__chip" data-degree="I">
-                    <span class="worked__slot">I</span>
                     <span class="worked__letter">C</span>
+                    <span class="worked__slot">I</span>
                   </span>
                   <span class="worked__chip" data-degree="V">
-                    <span class="worked__slot">V</span>
                     <span class="worked__letter">G</span>
+                    <span class="worked__slot">V</span>
                   </span>
                   <span class="worked__chip" data-degree="vi">
-                    <span class="worked__slot">vi</span>
                     <span class="worked__letter">Am</span>
+                    <span class="worked__slot">vi</span>
                   </span>
                   <span class="worked__chip" data-degree="IV">
-                    <span class="worked__slot">IV</span>
                     <span class="worked__letter">F</span>
+                    <span class="worked__slot">IV</span>
                   </span>
                 </div>
               </div>
@@ -176,50 +256,56 @@ const ROLE_COPY: Record<Degree, string> = {
                 </p>
                 <div class="worked__chords">
                   <span class="worked__chip" data-degree="I">
-                    <span class="worked__slot">I</span>
                     <span class="worked__letter">G</span>
+                    <span class="worked__slot">I</span>
                   </span>
                   <span class="worked__chip" data-degree="V">
-                    <span class="worked__slot">V</span>
                     <span class="worked__letter">D</span>
+                    <span class="worked__slot">V</span>
                   </span>
                   <span class="worked__chip" data-degree="vi">
-                    <span class="worked__slot">vi</span>
                     <span class="worked__letter">Em</span>
+                    <span class="worked__slot">vi</span>
                   </span>
                   <span class="worked__chip" data-degree="IV">
-                    <span class="worked__slot">IV</span>
                     <span class="worked__letter">C</span>
+                    <span class="worked__slot">IV</span>
                   </span>
                 </div>
               </div>
             </div>
             <figcaption class="worked__caption">
-              Different letters &mdash; but the same four slots, in the same
-              order, with the same feeling.
+              Different letters &mdash; the same four slots, in the same order,
+              with the same feeling.
             </figcaption>
           </figure>
 
           <p class="primer__punchline">
-            Every song below is filling those same four slots. They only
+            Every exhibit below fills those same four slots. They only
             <em>look</em> different because each one sits in its own key. Press
-            <strong>Align</strong> (or drag the key slider) and they all move into
-            one key &mdash; the letters become identical while the numbers I V vi
-            IV never move. That&rsquo;s the whole point.
+            <strong>Align</strong> in the press room at the foot of the page (or
+            scrub the key slider) and all five move into one key &mdash; the
+            letters become identical while the numbers I V vi IV never move.
+            That&rsquo;s the whole story.
           </p>
         </div>
       </details>
     </section>
 
-    <!-- Scene 2 + 3 — the lineup, with the align toolbar docked over it -->
+    <!-- Scene 2 + 3 — the evidence, with the press room docked over it -->
     <section class="stage" data-stage data-aligned="false">
       <div class="lineup" id="lineup">
+        <h2 class="section-head">
+          The Evidence
+          <span class="section-head__note">
+            exhibits A through E, printed with their plates showing
+          </span>
+        </h2>
         <p class="lineup__lede">
-          Here are five hit songs, each in the key it was released in &mdash; so
-          the chord letters look nothing alike. But look at the row of numbers
-          under each one: <strong>I V vi IV</strong>, the four &lsquo;slots&rsquo;
-          from above. Those never change. That&rsquo;s the shape every song
-          shares.
+          Each song appears in the key it was released in, so the chord letters
+          look nothing alike. Read the small constant column beneath each one:
+          <strong>I V vi IV</strong>. It never changes. It is the fingerprint on
+          all five records.
         </p>
 
         <ol class="songlist">
@@ -233,10 +319,16 @@ const ROLE_COPY: Record<Degree, string> = {
                   data-tonic={song.tonic}
                   data-current-key={song.tonic}
                 >
+                  <div class="song__cover" aria-hidden="true">
+                    <span>cover</span>
+                  </div>
+
                   <div class="song__meta">
-                    <h2 class="song__title">{song.title}</h2>
+                    <p class="song__kicker">
+                      Exhibit {EXHIBIT(songIndex)} &middot; {song.section}
+                    </p>
+                    <h3 class="song__title">{song.title}</h3>
                     <p class="song__artist">{song.artist}</p>
-                    <p class="song__section">{song.section}</p>
                     <p class="song__key">
                       key of <span data-current-key-label>{song.tonic}</span>
                       {/* Plain-language gloss on "key", reusing the chord-role
@@ -264,8 +356,9 @@ const ROLE_COPY: Record<Degree, string> = {
                           role="tooltip"
                           data-keygloss-tip
                         >
-                          The note this song treats as home. Change it and the
-                          chord letters shift, but the song stays the same.
+                          <em>n.b.</em> &mdash; the key is the note this song
+                          treats as home. Change it and the letters shift; the
+                          song stays the same.
                         </span>
                       </span>
                     </p>
@@ -350,11 +443,11 @@ const ROLE_COPY: Record<Degree, string> = {
         </ol>
       </div>
 
-      <!-- Scene 3 — the reveal: the control that snaps every song to one key -->
+      <!-- Scene 3 — the press room: the control that snaps every song to one key -->
       <div class="reveal" id="reveal" data-testid="align-control">
         <div class="reveal__inner">
           <div class="reveal__copy">
-            <p class="reveal__label">Transpose all five to</p>
+            <p class="reveal__label">Press room &middot; Transpose all five to</p>
             <p class="reveal__hint" data-align-status aria-live="polite">
               their own keys
             </p>
@@ -413,16 +506,24 @@ const ROLE_COPY: Record<Degree, string> = {
       </div>
     </section>
 
-    <!-- Scene 4 — the verdict + counter -->
+    <!-- Scene 4 — the verdict -->
     <section class="verdict" id="verdict">
       <p class="verdict__pov">
-        The letters change. The move doesn&rsquo;t. Now you&rsquo;ll hear it
-        everywhere.
+        Case closed. The letters change. The move doesn&rsquo;t.
+      </p>
+      <p class="verdict__sub">
+        Now you&rsquo;ll hear it everywhere &mdash; on the radio, in the
+        supermarket, at the wedding. You&rsquo;re welcome, and we&rsquo;re
+        sorry.
       </p>
       <p class="counter counter--verdict">
-        <span>5 songs</span><span aria-hidden="true">·</span><span>4 chords</span
-        ><span aria-hidden="true">·</span><span>1 move</span>
+        <span>5 songs</span><span aria-hidden="true">&middot;</span><span
+          >4 chords</span
+        ><span aria-hidden="true">&middot;</span><span>1 move</span><span
+          aria-hidden="true">&middot;</span
+        ><span>Corrections: none &mdash; we checked twice</span>
       </p>
+      <p class="stamp stamp--confirmed" aria-hidden="true">Confirmed</p>
     </section>
   </main>
 
