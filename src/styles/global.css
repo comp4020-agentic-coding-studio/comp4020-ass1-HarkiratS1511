@@ -1212,6 +1212,7 @@ body {
 [data-stage][data-aligned="true"] .reveal__payoff {
   padding-top: 0.5rem;
   opacity: 1;
+
   /* Cap sits above the copy's tallest natural wrap (~7.1rem when it reflows
      to six lines on a 390px screen) so the closing line is never clipped —
      max-height only bounds the reveal transition, it must not crop text. */
