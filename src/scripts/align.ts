@@ -11,8 +11,30 @@ import { ALIGN_KEY, chordLabelsForTonic, type Degree } from "../lib/chords";
 
 const DEGREES: Degree[] = ["I", "V", "vi", "IV"];
 
+// The 12 transpose targets, in the SAME order the range slider steps through
+// and the same order index.astro's <select> lists — index 0 = "C" … 11 = "B".
+// The slider maps its integer value straight into this array, so slider
+// position and rendered key can never disagree. (Mirrors chords.ts's internal
+// TONIC_SPELLING_BY_PITCH_CLASS, but the markup order is the contract here.)
+const KEYS = [
+  "C",
+  "Db",
+  "D",
+  "Eb",
+  "E",
+  "F",
+  "F#",
+  "G",
+  "Ab",
+  "A",
+  "Bb",
+  "B",
+] as const;
+
 const stage = document.querySelector<HTMLElement>("[data-stage]");
 const keySelect = document.querySelector<HTMLSelectElement>("[data-key-select]");
+const keySlider = document.querySelector<HTMLInputElement>("[data-key-slider]");
+const keyReadout = document.querySelector<HTMLElement>("[data-key-readout]");
 const alignButton = document.querySelector<HTMLButtonElement>("[data-align]");
 const resetButton = document.querySelector<HTMLButtonElement>("[data-reset]");
 const status = document.querySelector<HTMLElement>("[data-align-status]");
@@ -31,7 +53,24 @@ function songElement(title: string): HTMLElement | null {
   );
 }
 
-function render(): void {
+// Keep the slider thumb, its aria-valuetext (so screen readers announce the
+// key name, not "5 of 11"), and the visible readout in step with the shared
+// key whenever it changes — including aligns driven by the select or button,
+// not just by scrubbing the slider itself.
+function reflectSlider(key: string): void {
+  const index = KEYS.indexOf(key as (typeof KEYS)[number]);
+  if (index === -1) return;
+  if (keySlider) {
+    keySlider.value = String(index);
+    keySlider.setAttribute("aria-valuetext", `${key} major`);
+  }
+  if (keyReadout) keyReadout.textContent = `${key} major`;
+}
+
+// `animate` gates ONLY the CSS "snap" retrigger. Every scrub step passes
+// false so the labels roll smoothly through keys without strobing; aligns and
+// splits keep the default (true) and still snap exactly as before.
+function render(animate = true): void {
   for (const song of SONGS) {
     const el = songElement(song.title);
     if (!el) continue;
@@ -55,7 +94,7 @@ function render(): void {
     stage.dataset.aligned = String(aligned);
     // Retrigger the CSS "snap" animation: drop the attribute, force a reflow,
     // then re-add it so the keyframes restart on every align and every split.
-    if (hasRendered) {
+    if (animate && hasRendered) {
       stage.removeAttribute("data-snapping");
       stage.getBoundingClientRect();
       stage.setAttribute("data-snapping", "");
@@ -69,11 +108,12 @@ function render(): void {
   hasRendered = true;
 }
 
-function alignTo(key: string): void {
+function alignTo(key: string, animate = true): void {
   aligned = true;
   sharedKey = key;
   if (keySelect) keySelect.value = key;
-  render();
+  reflectSlider(key);
+  render(animate);
 }
 
 function splitApart(): void {
@@ -93,6 +133,20 @@ keySelect?.addEventListener("change", () => {
 
 alignButton?.addEventListener("click", () => alignTo(ALIGN_KEY));
 resetButton?.addEventListener("click", splitApart);
+
+// The key-morph slider: every integer step maps to KEYS[value] and drives the
+// EXISTING alignTo() path — no parallel transpose. `input` fires continuously
+// while dragging, so the chords roll through each key together; we pass
+// animate=false to suppress the per-step snap (strobing). `change` (thumb
+// released) settles with a single default snap.
+keySlider?.addEventListener("input", () => {
+  const key = KEYS[Number(keySlider.value)];
+  if (key) alignTo(key, false);
+});
+keySlider?.addEventListener("change", () => {
+  const key = KEYS[Number(keySlider.value)];
+  if (key) alignTo(key);
+});
 
 // Draw the initial (unaligned) state from the module rather than trusting the
 // server-rendered text, so the client and the pure logic can never disagree.

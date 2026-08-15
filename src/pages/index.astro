@@ -200,6 +200,33 @@ const ROLE_COPY: Record<Degree, string> = {
             </p>
           </div>
           <div class="reveal__controls">
+            {/* Key-morph slider: scrub to transpose all five songs continuously
+                through the 12 keys. Its 12 positions map 1:1 to KEYS above
+                (0 = "C" … 11 = "B"); align.ts reads the integer and drives the
+                same alignTo() path as the select and button. Labelled + a live
+                readout; aria-valuetext is set to the key name so screen readers
+                announce "C major", not "0 of 11". */}
+            <div class="keyscrub">
+              <label class="keyscrub__label" for="key-slider">
+                Scrub through keys
+              </label>
+              <input
+                id="key-slider"
+                class="keyscrub__slider"
+                type="range"
+                min="0"
+                max="11"
+                step="1"
+                value="0"
+                data-key-slider
+                aria-valuetext="C major"
+              />
+              <span
+                class="keyscrub__readout"
+                data-key-readout
+                aria-hidden="true">C major</span
+              >
+            </div>
             <label class="keypicker">
               <span class="keypicker__label">Shared key</span>
               <select class="keypicker__select" data-key-select>

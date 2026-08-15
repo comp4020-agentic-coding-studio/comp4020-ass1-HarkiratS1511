@@ -607,6 +607,46 @@ main > section {
   outline-offset: 2px;
 }
 
+/* --- The key-morph slider ------------------------------------------------
+   Scrub continuously through all 12 keys; align.ts drives the SAME alignTo()
+   path the select and Align button use, so dragging rolls every song's chords
+   through each key together while the Roman row stays fixed. width:100% (never
+   a fixed pixel width) with min-width:0 on the flex item keeps it inside the
+   control bar at 390px — no horizontal overflow. */
+
+.keyscrub {
+  display: flex;
+  flex: 1 1 12rem;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.keyscrub__label {
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.keyscrub__slider {
+  width: 100%;
+  margin: 0.35rem 0 0.1rem;
+  accent-color: var(--deg-i);
+  cursor: pointer;
+}
+
+.keyscrub__slider:focus-visible {
+  outline: 3px solid var(--deg-i);
+  outline-offset: 3px;
+}
+
+.keyscrub__readout {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
 .btn {
   font-family: var(--font-sans);
   font-size: 0.9rem;
@@ -719,6 +759,12 @@ main > section {
 
   .keypicker__select {
     font-size: 0.9rem;
+  }
+
+  /* Give the scrub slider its own full-width row so it never crowds the
+     select/buttons into overflow at 390px. */
+  .keyscrub {
+    flex-basis: 100%;
   }
 }
 
