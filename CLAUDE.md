@@ -160,3 +160,38 @@ catching you out, a fact about the stack the agent keeps getting wrong --- write
 it down here. Growing this file is the work of harness engineering, and the gap
 between this boilerplate and your own version is part of what your prototype
 says about the developer you're becoming.
+
+## What this build taught the harness (assignment 1)
+
+Rules earned the hard way on this prototype. Hold agents (and yourself) to them.
+
+- **The spec suite runs against static `dist/` HTML (JSDOM) — it cannot see
+  interaction, audio, layout, or overflow.** A green `pnpm check` proved the
+  hooks exist while the phone layout was still broken and a control was burying a
+  song. Anything the visitor *does* (click Align, hit Play) or *sees at a
+  viewport* must be verified by driving the built site in a real browser, not by
+  the suite alone. This repo does that with headless Chromium against `pnpm
+  preview` (base path `/comp4020-ass1-HarkiratS1511/`). It's the sensor that
+  actually catches the marked failures.
+- **A subagent reporting "pnpm check green" is necessary, not sufficient.** Re-verify
+  its work independently before committing: screenshot both marked viewports
+  (390×844 and 1920×1080) and assert `document.documentElement.scrollWidth <=
+  window.innerWidth` (no horizontal overflow), and drive the actual interaction.
+  Trust the artefact you looked at, not the report.
+- **Derive domain values from one source of truth; never hard-code them per
+  instance.** Every chord label comes from `src/lib/chords.ts` keyed on a tonic —
+  the UI and the audio both read it, so "align" is provably identical rather than
+  a staged lookup that could drift. When a claim is the whole point of the piece,
+  make it structurally impossible to fake and back it with an invariant test.
+- **`data-testid` / `data-*` hooks are the contract** between the markup, the
+  spec tests, and the browser drivers (`data-song`, `data-testid="roman-row"`,
+  `data-testid="chords"`, `data-chord-label`, `data-current-key`, `data-align`,
+  `data-reset`, `data-align-status`). Keep them stable across refactors; a
+  restyle that renames one silently breaks the contract.
+- **Astro base path bites only on the live URL.** Assets 404 on
+  `…github.io/<repo>/` if `base` is wrong while looking fine locally — always
+  verify against `pnpm preview` (which serves under the base), not `pnpm dev` at
+  root.
+- **Commit one verified phase at a time.** Foundation → UI → audio → polish, each
+  committed only after its own verification passed. The history is then an honest
+  record of how it came together, which is itself marked.

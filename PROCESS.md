@@ -1,83 +1,78 @@
 # Process overview
 
-<!-- TEMPLATE: this file is a shape to fill in, not a form. Replace everything
-     in it with your own overview, and delete this comment — `pnpm
-     check:evidence` will remind you if it's still here. -->
-
-A reading-guide to how the work came together --- a map to your process, not an
-essay about it. Markers read this file and follow its citations; they don't
-trawl the repo for evidence you didn't point at, so if a moment mattered, cite
-it.
-
-This file is the shape; the course site's
-[assessment page](https://comp.anu.edu.au/courses/comp4020-agentic-coding-studio/topics/assessment/#what-you-submit)
-is the requirement, and each brief adds its own word count and moment count.
+A reading-guide to how this prototype came together. It's built as an
+orchestrated pipeline: I set the concept and the calls, and directed subagents
+to build each phase, but every phase was gated behind verification I ran myself
+before it was committed. Follow the citations to see where the judgement lived.
 
 ## What I built
 
-One paragraph: the thing, and the idea behind it.
+**"Every pop song is the same four chords."** An interactive explainer that
+proves five famous pop songs — *I'm Yours*, *Where Is the Love?*, *Someone Like
+You*, *With or Without You*, *She Will Be Loved* — are all the same I–V–vi–IV
+progression in different keys. Each song first appears in the key it was
+released in, so the chord letters look nothing alike. An **Align** control
+transposes all five to one shared key and they snap to identical chords, while a
+Roman-numeral row (always I V vi IV) never moves — that constant row is the
+whole point. You can also *hear* it: each song plays its four-chord loop, and
+aligned songs play the identical progression. The point of view is that this is
+a shared musical language, not a "pop is lazy" gotcha.
 
 ## The moments that mattered
 
-Three or four for an assignment; fewer is fine for a weekly prototype. Keep the
-list short so each moment has room to do all four jobs:
+1. **The claim had to be true before anything else.** Two of my first song picks
+   (*Let It Be*, *Don't Stop Believin'*) aren't actually pure I–V–vi–IV loops —
+   one only opens on the shape, the other substitutes a iii. The agent flagged
+   it; the obvious move was to fudge the wording ("mostly these chords"). Instead
+   I swapped them for songs I verified are pure loops end to end, because the
+   entire piece collapses if the claim is dishonest. How I knew it held: each
+   final song's chords are asserted in a unit test, and an *invariant* test
+   asserts all five produce identical labels at the shared key and distinct
+   labels at their own — so a wrong song fails the suite.
+   [`5f565cd`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-HarkiratS1511/commit/5f565cd)
 
-1. **what happened** --- the problem, or the thing the agent got wrong
-2. **what you did instead of the obvious thing** --- the call you made, and why
-   it beat the obvious one
-3. **how you knew it was right** --- the check you ran, the viewport you looked
-   at, what you read before accepting the diff
-4. **the citation** --- a commit or commit range, a `CLAUDE.md` change, a check
-   that went from red to green, a prompt paired with the commit it produced
+2. **Derive the chords from music theory; never hard-code them per song.** The
+   tempting shortcut is a lookup table of each song's four chords. I made the
+   core a pure module that *derives* the correctly-spelled I, V, vi, IV from any
+   tonic (flat keys get flats, sharp keys get sharps, no doubled letters). That's
+   what makes "align" provable rather than staged: aligning is literally rendering
+   every song from the same tonic, so they *must* come out identical — there's no
+   per-song copy that could disagree. The invariant test is the proof, and the
+   browser reads its labels from the same module.
+   [`5f565cd`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-HarkiratS1511/commit/5f565cd)
 
-Jobs 2 and 3 are the ones the repo can't tell a reader on its own, so they're
-where the marks are. The strongest moments are the ones where a correction
-landed in the **harness** rather than in another prompt --- a rule added to
-`CLAUDE.md`, a check wired up, an attempt thrown away: re-prompting until it
-passes is the routine case, and changing what the agent works against is the
-skilled one.
+3. **Verify what the tests can't see — in a real browser.** The spec suite runs
+   against static `dist/` HTML (JSDOM); it can prove the hooks exist but not that
+   clicking *Align* actually transposes, or that the audio retunes with the key.
+   So I stood up a headless-Chromium rig and drove the built site: it confirmed
+   unaligned = five distinct keys, aligned = all C/G/Am/F, reset restores each
+   key, the Roman row stays constant — and, for audio, that aligned songs produce
+   an *identical frequency set* while unaligned songs differ (the thesis proven in
+   sound, octave-agnostically). A subagent can't hear its own output; this is how
+   I knew the sound was right.
+   [`c5a9249`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-HarkiratS1511/commit/c5a9249) ·
+   [`581e0bd`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-HarkiratS1511/commit/581e0bd)
 
-Cite each moment as a link whose text is the commit hash or range and whose
-target is this repo's commit or compare URL, so a reader clicks straight to the
-evidence:
+4. **A subagent's green `pnpm check` is necessary, not sufficient.** The build
+   passed every check with the phone layout broken: the design had shipped with
+   *no responsive breakpoints*, so the song grid overflowed the 390px viewport by
+   ~200px and the align toolbar opaquely buried a song at both viewports — none of
+   which `tsc`, lint, or the spec can see. I only caught it by screenshotting the
+   built site at the two marked viewports (390×844 and 1920×1080) and reading the
+   overflow measurement, then briefing the fix (stack on mobile, dock the toolbar
+   to the viewport bottom) and re-verifying by screenshot.
+   [`581e0bd...798e209`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-HarkiratS1511/compare/581e0bd...798e209)
 
-- one commit: [`a1b2c3d`](https://github.com/YOUR-ORG/YOUR-REPO/commit/a1b2c3d)
-- a range:
-  [`a1b2c3d...e4f5a6b`](https://github.com/YOUR-ORG/YOUR-REPO/compare/a1b2c3d...e4f5a6b)
+## Where to look
 
-To pair a prompt with the commit it produced, quote the prompt (curated, not a
-full transcript) next to the citation:
-
-> the prompt, verbatim
-
-Screenshots are welcome where one carries the verification better than a
-sentence does. Commit the file to this repo and link it with a **relative**
-path, which is what makes it render on GitHub: `![alt text](docs/before.png)`.
-Images don't count towards the word count and don't replace the citation.
-
-### A worked moment, for shape
-
-Delete this section along with the rest of the boilerplate --- it's here to show
-the four jobs in one paragraph, not to be imitated in content.
-
-> The date formatter kept coming back with `toLocaleDateString()` and no locale
-> argument, so the same build rendered differently on my machine and in CI. I'd
-> already re-prompted it twice, which fixed the line but not the habit, so the
-> third time I put the rule in `CLAUDE.md` instead
-> ([`3f9ac21`](https://github.com/YOUR-ORG/YOUR-REPO/commit/3f9ac21)) and added
-> a spec test that fails on a bare `toLocaleDateString`. That's what told me it
-> had actually taken: the test went red against the old code and green against
-> the new, and the next two features it wrote passed it without prompting
-> ([`3f9ac21...b7e0d14`](https://github.com/YOUR-ORG/YOUR-REPO/compare/3f9ac21...b7e0d14)).
-
-## Before you ship
-
-`pnpm check:evidence` verifies your citations resolve to real commits, that the
-current reflection entry is in `reflections/`, and that your `CLAUDE.md` is
-there --- before a marker ever opens the file. It checks that your map is
-traceable, not that it is good: the marker judges whether your small,
-deliberately chosen set of moments shows real judgement and reflection. A green
-check is not a substitute for that curation.
-
-Images are deliberately not checked, because whether one renders is visible the
-moment you look. Open this file on GitHub and look at it before you ship.
+The history reads as one commit per phase, each committed only after its
+verification passed: the pure module and its failing spec contract
+([`5f565cd`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-HarkiratS1511/commit/5f565cd)),
+the reveal UI + align interaction
+([`c5a9249`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-HarkiratS1511/commit/c5a9249)),
+the Web Audio engine
+([`581e0bd`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-HarkiratS1511/commit/581e0bd)),
+and the responsive/animation/a11y pass
+([`798e209`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass1-HarkiratS1511/commit/798e209)).
+The harness lessons this build taught are written into `CLAUDE.md`; the personal
+reflection is in `reflections/assignment-1.md`.
