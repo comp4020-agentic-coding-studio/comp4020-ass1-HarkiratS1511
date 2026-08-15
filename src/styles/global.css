@@ -359,6 +359,7 @@ main > section {
 /* --- The progression: four colour-coded chord cells + the Roman row ------- */
 
 .chords {
+  position: relative; /* anchor for the on-demand chord-role popover */
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 0.5rem;
@@ -400,6 +401,82 @@ main > section {
 .chord--playing .chord__label {
   font-weight: 700;
   color: var(--degree-color-text);
+}
+
+/* --- Chord-role explainer -------------------------------------------------
+   Each chord plays the same degree-based role in every key, so the copy is
+   constant per degree (rendered once in the markup) and revealed on demand —
+   never all twenty at once. Reveal triggers on hover, keyboard focus
+   (:focus-within), and a tap that pins it open ([data-open], set by roles.ts).
+   The popover is anchored to the .chords row (position: relative below) and
+   stretched inset-inline: 0 so it spans that row and wraps — it can't get wider
+   than the row, so it can never push the 390px phone viewport into horizontal
+   overflow. It's absolutely positioned, so it adds no layout width of its own.
+   The text stays in the accessibility tree while hidden (opacity, not
+   display/visibility), so the aria-describedby wiring announces the role on
+   focus for screen-reader users. (.chords carries position: relative up top.) */
+
+/* The operable cell: a full-bleed, chrome-free button wrapping the label so the
+   whole cell is one keyboard-reachable target without altering the chord look. */
+.chord__btn {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.chord__btn:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+.chord__role {
+  position: absolute;
+  inset-inline: 0;
+  top: calc(100% + 0.4rem);
+  z-index: 6;
+  max-width: 100%;
+  margin: 0;
+  padding: 0.5rem 0.75rem 0.5rem 0.9rem;
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  text-align: left;
+  color: var(--paper);
+  background-color: var(--ink);
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 24px #1b1b1b40;
+  opacity: 0;
+  transform: translateY(-0.25rem);
+  pointer-events: none;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+/* A coloured spine ties the popover back to its chord's degree hue. */
+.chord__role::before {
+  content: "";
+  position: absolute;
+  inset-block: 0.5rem;
+  inset-inline-start: 0.35rem;
+  width: 3px;
+  border-radius: 3px;
+  background-color: var(--degree-color);
+}
+
+.chord:hover .chord__role,
+.chord:focus-within .chord__role,
+.chord[data-open] .chord__role {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
 }
 
 /* The "snap": align.ts toggles [data-snapping] on the stage each time the
@@ -667,5 +744,11 @@ main > section {
      drop the lift/scale so the "playing" cell still reads at a glance. */
   .chord--playing {
     transform: none;
+  }
+
+  /* The role popover shows instantly: no slide-in transform, no transition. */
+  .chord__role {
+    transform: none;
+    transition: none;
   }
 }

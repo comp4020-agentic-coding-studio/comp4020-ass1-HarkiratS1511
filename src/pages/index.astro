@@ -1,7 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import { SONGS } from "../data/songs";
-import { ALIGN_KEY, chordsForTonic } from "../lib/chords";
+import { ALIGN_KEY, chordsForTonic, type Degree } from "../lib/chords";
 
 // The keys the visitor can transpose every song to. Conventional lead-sheet
 // spellings (mixed sharps/flats) so the shared-key readout matches how a
@@ -23,6 +23,17 @@ const KEYS = [
 
 // Degree order is the thesis: every song, every key, always I → V → vi → IV.
 const ROMANS = ["I", "V", "vi", "IV"] as const;
+
+// What each chord *does* — its role is degree-based, so it's identical in every
+// key and every song. Keyed on degree, this copy is rendered once per chord and
+// revealed on demand (hover / focus / tap); it is NEVER written into
+// [data-chord-label], which align.ts owns and overwrites on every align.
+const ROLE_COPY: Record<Degree, string> = {
+  I: "Home. Where the song rests.",
+  V: "Tension. It leans forward, wanting to resolve.",
+  vi: "The turn. The wistful, minor-key step.",
+  IV: "The lift. It opens the song back up.",
+};
 ---
 
 <Layout title="Every pop song is the same four chords">
@@ -82,7 +93,7 @@ const ROMANS = ["I", "V", "vi", "IV"] as const;
 
         <ol class="songlist">
           {
-            SONGS.map((song) => {
+            SONGS.map((song, songIndex) => {
               const chords = chordsForTonic(song.tonic);
               return (
                 <li
@@ -106,13 +117,46 @@ const ROMANS = ["I", "V", "vi", "IV"] as const;
                       data-testid="chords"
                       aria-label={`Chords for ${song.title} in the current key`}
                     >
-                      {chords.map((chord) => (
-                        <div class="chord" data-degree={chord.degree}>
-                          <span class="chord__label" data-chord-label>
-                            {chord.label}
-                          </span>
-                        </div>
-                      ))}
+                      {chords.map((chord) => {
+                        // Unique per song+degree so aria-describedby resolves
+                        // 1:1 (degree is unique within a song's four chords).
+                        const roleId = `chord-role-${songIndex}-${chord.degree}`;
+                        return (
+                          <div
+                            class="chord"
+                            data-degree={chord.degree}
+                            data-chord-cell
+                          >
+                            {/* The operable control. Its accessible name is the
+                                visible chord letter; the role text is announced
+                                via aria-describedby. Keyboard-reachable and
+                                Enter/Space-triggerable as a native button. */}
+                            <button
+                              class="chord__btn"
+                              type="button"
+                              data-chord-toggle
+                              aria-expanded="false"
+                              aria-describedby={roleId}
+                            >
+                              <span class="chord__label" data-chord-label>
+                                {chord.label}
+                              </span>
+                            </button>
+                            {/* Role lives OUTSIDE [data-chord-label] as a
+                                sibling, so align.ts can never clobber it. Kept
+                                in the a11y tree while visually hidden (opacity),
+                                so describedby announces it on focus. */}
+                            <span
+                              class="chord__role"
+                              id={roleId}
+                              role="tooltip"
+                              data-chord-role
+                            >
+                              {ROLE_COPY[chord.degree]}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
 
                     <div
@@ -193,4 +237,5 @@ const ROMANS = ["I", "V", "vi", "IV"] as const;
 
   <script src="../scripts/align.ts"></script>
   <script src="../scripts/audio.ts"></script>
+  <script src="../scripts/roles.ts"></script>
 </Layout>
