@@ -355,6 +355,22 @@ main > section {
   padding: 0.55rem 0.4rem 0.15rem;
   text-align: center;
   background-color: var(--paper-sunk);
+  transition:
+    transform 0.14s ease,
+    box-shadow 0.14s ease,
+    background-color 0.14s ease;
+}
+
+/* Playback highlight (set by audio.ts): the chord sounding *right now*. Each
+   lit cell glows in its own degree hue — filled tint + a ring in that colour,
+   lifted and scaled so it clearly reads as "this one, now". Snappy so the
+   I→V→vi→IV sweep stays crisp. Cleared the instant playback stops. */
+.chord--playing {
+  background-color: color-mix(in srgb, var(--degree-color) 26%, var(--paper));
+  box-shadow:
+    0 0 0 2px var(--degree-color),
+    0 6px 16px color-mix(in srgb, var(--degree-color) 45%, transparent);
+  transform: translateY(-3px) scale(1.05);
 }
 
 .chord__label {
@@ -364,6 +380,12 @@ main > section {
   font-weight: 500;
   letter-spacing: 0.01em;
   transition: color 0.35s ease;
+}
+
+/* The sounding chord's label reads bolder, in its own degree's AA tone. */
+.chord--playing .chord__label {
+  font-weight: 700;
+  color: var(--degree-color-text);
 }
 
 /* The "snap": align.ts toggles [data-snapping] on the stage each time the
@@ -625,5 +647,11 @@ main > section {
   /* Honestly no motion: the snap becomes an instant swap. */
   .stage[data-snapping] .chord__label {
     animation: none;
+  }
+
+  /* Playback highlight stays visible without motion: keep the tint + ring,
+     drop the lift/scale so the "playing" cell still reads at a glance. */
+  .chord--playing {
+    transform: none;
   }
 }

@@ -33,6 +33,13 @@ const TICK_MS = 25; // how often the scheduler wakes
 const PLAY_GLYPH = "▶";
 const STOP_GLYPH = "■";
 
+// Chord index → scale degree, in the same order chordLabelsForTonic yields its
+// labels (I, V, vi, IV). Used to pick the [data-degree] chord cell(s) to light.
+const DEGREES = ["I", "V", "vi", "IV"] as const;
+
+// The class toggled on a `.chord` element while its chord is sounding.
+const PLAYING_CLASS = "chord--playing";
+
 // --- Audio context (created on first gesture, never at module load) --------
 
 let audioContext: AudioContext | null = null;
@@ -56,6 +63,12 @@ interface Session {
   timer: number;
   nextChordTime: number;
   step: number;
+  // Sync: cells to light per chord index (0..3), a schedule of when each
+  // scheduled chord sounds on the audio clock, and the running rAF handle.
+  targets: HTMLElement[][];
+  schedule: { index: number; start: number; end: number }[];
+  raf: number;
+  litIndex: number; // chord index currently highlighted, -1 = none
 }
 
 let session: Session | null = null;
@@ -96,11 +109,18 @@ function scheduleChord(active: Session, label: string, startTime: number): void 
 function pump(active: Session): void {
   const context = getAudioContext();
   while (active.nextChordTime < context.currentTime + LOOKAHEAD) {
-    const label = active.labels[active.step % active.labels.length];
-    scheduleChord(active, label, active.nextChordTime);
+    const index = active.step % active.labels.length;
+    const start = active.nextChordTime;
+    scheduleChord(active, active.labels[index], start);
+    // Record when this chord actually sounds on the audio clock so the rAF
+    // highlight can follow the ear, not the (lookahead-early) scheduling.
+    active.schedule.push({ index, start, end: start + CHORD_SECONDS });
     active.nextChordTime += CHORD_SECONDS;
     active.step += 1;
   }
+  // Drop entries that have already finished sounding, so the list stays small.
+  const cutoff = context.currentTime - CHORD_SECONDS;
+  active.schedule = active.schedule.filter((entry) => entry.end >= cutoff);
 }
 
 // --- Button affordance -----------------------------------------------------
@@ -135,6 +155,57 @@ function setButtonPlaying(button: HTMLButtonElement, playing: boolean): void {
   }
 }
 
+// --- Playback highlight (synced off the audio clock via rAF) ---------------
+
+// The chord cells a session lights, indexed by chord position (0→I .. 3→IV).
+// Per-song play scopes to that song's four cells; hero play scopes to the
+// whole document, so every song's cell for a degree lights at once — the
+// I→V→vi→IV sweep moves across all five songs together.
+function highlightTargets(button: HTMLButtonElement): HTMLElement[][] {
+  const isHero = button.dataset.play === "hero";
+  const scope: ParentNode = isHero
+    ? document
+    : (button.closest<HTMLElement>("[data-song]") ?? document);
+  return DEGREES.map((degree) =>
+    Array.from(
+      scope.querySelectorAll<HTMLElement>(`.chord[data-degree="${degree}"]`),
+    ),
+  );
+}
+
+/** Remove the playing state from every cell this session could light. */
+function clearHighlight(active: Session): void {
+  for (const cells of active.targets) {
+    for (const cell of cells) cell.classList.remove(PLAYING_CLASS);
+  }
+}
+
+/** Light the cells for chord `index` (and only those); -1 lights nothing. */
+function setHighlight(active: Session, index: number): void {
+  clearHighlight(active);
+  if (index >= 0) {
+    for (const cell of active.targets[index]) cell.classList.add(PLAYING_CLASS);
+  }
+}
+
+/** rAF loop: read the audio clock, light the chord that is sounding *now*. */
+function followPlayhead(active: Session): void {
+  if (session !== active) return; // stopped or superseded — do not reschedule
+  const now = getAudioContext().currentTime;
+  let index = -1;
+  for (const entry of active.schedule) {
+    if (entry.start <= now && now < entry.end) {
+      index = entry.index;
+      break;
+    }
+  }
+  if (index !== active.litIndex) {
+    setHighlight(active, index);
+    active.litIndex = index;
+  }
+  active.raf = window.requestAnimationFrame(() => followPlayhead(active));
+}
+
 // --- Start / stop ----------------------------------------------------------
 
 /** Stop the current loop (if any), fading out cleanly and freeing its nodes. */
@@ -144,6 +215,8 @@ function stop(): void {
   session = null;
 
   window.clearInterval(active.timer);
+  window.cancelAnimationFrame(active.raf);
+  clearHighlight(active); // the highlight must never linger past stop
   setButtonPlaying(active.button, false);
 
   const context = getAudioContext();
@@ -186,12 +259,17 @@ function start(button: HTMLButtonElement, labels: string[]): void {
     timer: 0,
     nextChordTime: context.currentTime + 0.05, // tiny lead-in for a clean onset
     step: 0,
+    targets: highlightTargets(button),
+    schedule: [],
+    raf: 0,
+    litIndex: -1,
   };
   session = active;
 
   setButtonPlaying(button, true);
   pump(active); // queue the first chords immediately, then keep topping up
   active.timer = window.setInterval(() => pump(active), TICK_MS);
+  active.raf = window.requestAnimationFrame(() => followPlayhead(active));
 }
 
 // --- Wiring ----------------------------------------------------------------
