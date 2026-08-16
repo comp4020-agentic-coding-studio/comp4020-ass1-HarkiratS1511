@@ -1,41 +1,30 @@
-<!-- DRAFT SCAFFOLD — this is grounded in what actually happened, but the
-     reflection is yours. Rewrite it in your own voice before you ship, and
-     especially replace anything in [brackets] in the second answer: the marker
-     is reading for *your* judgement and *your* growth, not the agent's. -->
-
-# Assignment 1 — reflection
+# Assignment 1 reflection
 
 ## What was the breakthrough that moved the work forward?
 
-The breakthrough was deciding that the demo had to be *provably* true, not just
-convincing-looking, and building the project around that. Two of my first song
-choices turned out not to be pure I–V–vi–IV loops, and the easy path was to
-soften the wording. Instead I swapped them for songs I verified, and — more
-importantly — I stopped hard-coding each song's chords and made a single pure
-module *derive* the four chords from a key. That one decision is what made
-"align" real: aligning every song is just rendering them all from the same
-tonic, so they *must* come out identical; there's no per-song copy that could
-lie. An invariant test asserts exactly that.
+The breakthrough for me was the idea itself. Once I settled on proving that
+every pop song is really the same four chords, I finally had one thing the whole
+site had to serve, and that made every decision after it easier to make.
 
-The second half of the breakthrough was realising the automated checks couldn't
-actually see the thing I was building. `pnpm check` runs against static HTML and
-happily passed while the phone layout was broken. So I drove the built site in a
-real browser to prove the parts that matter — that clicking Align genuinely
-transposes all five songs, that the audio retunes with the key, and that
-nothing overflows at 390px. Treating "verify what the tests can't" as its own
-step is what caught the real defects.
+The clearest example was a feature I ended up cutting. Early on I had built a
+slider that let you scrub every song through all twelve keys at once. It was fun
+to play with, but it was showing off more than it was making my point. Swapping
+it out for a simple key dropdown and one Align button was the moment the whole
+thing got sharp: the slider was a toy, the dropdown made the payoff obvious.
+Deciding what to take away moved the project forward more than most of the
+things I added.
 
 ## What did this work change about who you want to be as a software developer?
 
-<!-- This is the part only you can write. Some honest starting questions: -->
-<!-- - Directing agents to build while you stay the verifier — how did that -->
-<!--   change what you think your job actually is? -->
-<!-- - You chose factual honesty over a slicker-sounding claim. What does that -->
-<!--   say about the standards you want to hold? -->
-<!-- - The green check that lied to you — how does that change how much you'll -->
-<!--   trust automated sensors vs. looking at the artefact yourself? -->
+Honestly this didn't change what I want to be, but it reminded me of it.
 
-[Your answer — a few sentences in your own voice. For example: this project
-changed how I think about my role: the leverage wasn't in writing the code, it
-was in deciding what "correct" meant and building the checks that could prove
-it. I want to be the kind of developer who … ]
+Working on this made me realise we are slowly losing the kind of web pages
+people used to make, where someone was so into one topic that they built a whole
+interactive site just to explain it to you, which is basically what my claim is.
+Not many people do that anymore. Now they ask ChatGPT and are okay with whatever
+it tells them. I get why, it is faster. But personally I would take someone who
+has clearly researched something they are genuinely passionate about over a
+generic AI answer that every other person can get too.
+
+That is the kind of thing I want to build. I want to make sites like this one,
+and software that makes other people want to go and build their own.
