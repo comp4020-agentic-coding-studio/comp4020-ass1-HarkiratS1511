@@ -832,7 +832,13 @@ body {
   width: var(--spine);
   margin-inline: auto;
   padding-top: 1.75rem;
-  padding-bottom: 7rem;
+
+  /* Just enough to lift the last exhibit's rule off the heavy press-room bar
+     that docks at the foot of the stage — the sticky bar reserves its own
+     height below this, so a large pad here only reads as dead space on desktop.
+     The phone override (15rem) is larger on purpose: there the bar floats over
+     content and the last song needs room to clear it. */
+  padding-bottom: 3rem;
 }
 
 .section-head {
